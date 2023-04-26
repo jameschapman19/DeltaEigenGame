@@ -1,0 +1,48 @@
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
+program: train.py
+method: grid
+parameters:
+  experiment:
+    values:
+      - cca
+      - pls
+  model:
+    values:
+      - gamma
+  data:
+    values:
+      - mnist
+      - cifar
+      - mediamill
+  batch_size:
+    values:
+      - 32
+      - 64
+      - 128
+  components:
+    values:
+      - 8
+  epochs:
+    values:
+      - 10
+  seed:
+    values:
+      - 0
+  lr:
+    values:
+      - 0.01
+      - 0.001
+      - 0.0001
+  nesterov:
+    values:
+      - True
+      - False
+  gamma:
+    values:
+      - 0.01
+      - 0.001
+      - 0.0001
