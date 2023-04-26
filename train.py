@@ -2,6 +2,7 @@ import argparse
 
 import numpy as np
 from cca_zoo.models import CCA, PLS
+from scipy.linalg import svdvals
 
 import cca
 import pls
@@ -19,7 +20,7 @@ def get_arguments():
         "--model", type=str, default="delta", help="Model to train"
     )
     parser.add_argument(
-        "--data", type=str, default="mnist", help="Data directory"
+        "--data", type=str, default="cifar", help="Data directory"
     )
     parser.add_argument(
         "--objective", type=str, default="pls", help="Objective function"
@@ -33,16 +34,16 @@ def get_arguments():
 
     # Parameters
     parser.add_argument(
-        "--batch_size", type=int, default=8, help="Batch size"
+        "--batch_size", type=int, default=128, help="Batch size"
     )
     parser.add_argument(
-        "--epochs", type=int, default=1, help="Number of epochs"
+        "--epochs", type=int, default=2, help="Number of epochs"
     )
     parser.add_argument(
-        "--lr", type=float, default=5e-4, help="Learning rate"
+        "--lr", type=float, default=1e-4, help="Learning rate"
     )
     parser.add_argument(
-        "--momentum", type=bool, default=0.5, help="Use Nesterov momentum"
+        "--momentum", type=bool, default=0.9, help="Use Nesterov momentum"
     )
 
     # GammaEigenGame
@@ -86,13 +87,14 @@ def main():
         learning_rate=wandb.config.lr,
         latent_dims=wandb.config.components,
         momentum=wandb.config.momentum,
-        scale=False,
-        centre=False,
     )
 
     if wandb.config.data == "synthetic":
         X = np.random.rand(100, 10)
         Y = np.random.rand(100, 10)
+        from sklearn.preprocessing import StandardScaler
+        X = StandardScaler().fit_transform(X)
+        Y = StandardScaler().fit_transform(Y)
         X_test = np.random.rand(100, 10)
         Y_test = np.random.rand(100, 10)
     elif wandb.config.data == "cifar":
@@ -106,24 +108,11 @@ def main():
     else:
         raise NotImplementedError
 
-    from cca_zoo.models import PLSEigenGame
-
-    # ppp=PLSEigenGame(latent_dims=wandb.config.components, scale=False, centre=False, epochs=100, learning_rate=1e-2).fit(((X, Y)))
-    # m=tvc(ppp,(X,Y))
-    # print()
-
-    # S = np.linalg.svd(X.T @ Y / X.shape[0], compute_uv=False)
-    if wandb.config.objective == "cca":
-        C = CCA(latent_dims=wandb.config.components).fit(((X, Y)))
-        true = {"train": C.score((X, Y)).sum(), "val": C.score((X_test, Y_test)).sum()}
-    elif wandb.config.objective == "pls":
-        U, S, Vt = np.linalg.svd(X.T @ Y / (X.shape[0] - 1), full_matrices=False)
-        true = {"train": S[:wandb.config.components].sum(),
-                "val": tvc((U[:, :wandb.config.components], Vt.T[:, :wandb.config.components]), (X_test, Y_test)).sum()}
+    if wandb.config.data == "synthetic":
+        true = {"train": svdvals(X.T@Y)[:5].sum(), "val": tvc([np.eye(10), np.eye(10)], [X_test, Y_test]).sum()}
     else:
-        raise NotImplementedError
+        true = {"train": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy').sum(), "val": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy').sum()}
     model.fit([X, Y], val_views=[X_test, Y_test], true=true)
-    print()
 
 
 if __name__ == '__main__':
@@ -132,6 +121,6 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     args = vars(args)
-    wandb.init(project="delta-eigengame", config=args, mode='offline')
+    wandb.init(project="DeltaEigenGame", config=args, mode='offline')
     main()
     wandb.finish()

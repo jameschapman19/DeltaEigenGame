@@ -24,12 +24,14 @@ class Tracker:
                     tcc = self.tcc(views)
                     wandb.log({"Train TCC": tcc})
                     if true is not None:
-                        wandb.log({"Train PCC": tcc / true['train']})
+                        pcc = tcc / true['train']
+                        wandb.log({"Train PCC": pcc})
                     if val_views is not None:
                         tcc= self.tcc(val_views)
                         wandb.log({"Val TCC": tcc})
                         if true is not None:
-                            wandb.log({"Val PCC": tcc / true['val']})
+                            pcc=tcc / true['val']
+                            wandb.log({"Val PCC": pcc})
         return self
 
     def tcc(self, views):

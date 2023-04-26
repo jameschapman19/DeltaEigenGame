@@ -2,20 +2,24 @@ import numpy as np
 
 
 class GEPSolver:
-    def __init__(self, learning_rate=0.001, epochs=200000, components=1, method="eg"):
+    def __init__(self, learning_rate=0.001, epochs=200000, components=1, method="eg", return_eigvals=True):
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.components = components
         self.method = method
         self.rho = 1e-3
         self.BU = None
+        self.return_eigvals = return_eigvals
 
     def fit(self, A, B):
         u = np.random.rand(A.shape[1], self.components)
         u /= np.sqrt(np.diag(u.T @ B @ u))
         for _ in range(self.epochs):
             u = u - self.learning_rate * self.grads(A, B, u)
-        return u
+        if self.return_eigvals:
+            return u, np.diag(u.T @ A @ u) / np.diag(u.T @ B @ u)
+        else:
+            return u
 
     def grads(self, A, B, u):
         Aw = A @ u
@@ -66,17 +70,11 @@ def main():
     w, u_ = eigh(A, B)
     print(np.diag(u_.T @ A @ u_))
     solver = GEPSolver(components=7, method="gamma")
-    u_eg = solver.fit(A, B)
-    print(np.diag(u_eg.T @ A @ u_eg))
-    print(np.diag(u_eg.T @ B @ u_eg))
+    u_eg, v_eg = solver.fit(A, B)
     solver = GEPSolver(components=7, method="delta")
-    u_eg = solver.fit(A, B)
-    print(np.diag(u_eg.T @ A @ u_eg))
-    print(np.diag(u_eg.T @ B @ u_eg))
+    u_eg, v_eg = solver.fit(A, B)
     solver = GEPSolver(components=7, method="gha")
-    u_gha = solver.fit(A, B)
-    print(np.diag(u_gha.T @ A @ u_gha))
-    print(np.diag(u_gha.T @ B @ u_gha))
+    u_eg, v_eg = solver.fit(A, B)
 
 
 if __name__ == '__main__':

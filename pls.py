@@ -11,6 +11,7 @@ class Tracker:
     def fit(self, views: Iterable[np.ndarray], y=None, val_views: Iterable[np.ndarray] = None, log_every=100,
             true=None):
         views = self._validate_inputs(views)
+        val_views = [self.scalers[i].transform(view) for i, view in enumerate(val_views)]
         self._check_params()
         train_dataloader, val_dataloader = self.get_dataloader(views)
         initializer = _default_initializer(
@@ -18,21 +19,23 @@ class Tracker:
         )
         self.weights = initializer.fit(views).weights
         self.weights = [weights.astype(np.float32) for weights in self.weights]
-        self.track=[]
-        for _ in range(self.epochs):
-            for i, sample in enumerate(train_dataloader):
+        i = 0
+        for e in range(self.epochs):
+            for s, sample in enumerate(train_dataloader):
                 self._update(sample["views"])
+                i += 1
                 if i % log_every == 0:
-                    #self.weights_=[self.qr_weights(weights) for weights in self.weights]
-                    tvc = -self.objective(views,u=self.weights)
+                    tvc = -self.objective(views, u=self.weights)
                     wandb.log({"Train TVC": tvc})
                     if true is not None:
-                        wandb.log({"Train PVC": tvc / true['train']})
+                        pvc = tvc / true['train']
+                        wandb.log({"Train PVC": pvc})
                     if val_views is not None:
-                        tvc= -self.objective(val_views,u=self.weights)
+                        tvc = -self.objective(val_views, u=self.weights)
                         wandb.log({"Val TVC": tvc})
                         if true is not None:
-                            wandb.log({"Val PVC": tvc / true['val']})
+                            pvc = tvc / true['val']
+                            wandb.log({"Val PVC": pvc})
         return self
 
     def tvc(self, views):
