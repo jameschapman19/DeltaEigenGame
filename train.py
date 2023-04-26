@@ -34,7 +34,7 @@ def get_arguments():
 
     # Parameters
     parser.add_argument(
-        "--batch_size", type=int, default=128, help="Batch size"
+        "--batch_size", type=int, default=512, help="Batch size"
     )
     parser.add_argument(
         "--epochs", type=int, default=2, help="Number of epochs"
@@ -112,7 +112,9 @@ def main():
         true = {"train": svdvals(X.T@Y)[:5].sum(), "val": tvc([np.eye(10), np.eye(10)], [X_test, Y_test]).sum()}
     else:
         true = {"train": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy').sum(), "val": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy').sum()}
-    model.fit([X, Y], val_views=[X_test, Y_test], true=true)
+    # log every 10% of an epoch for a given dataset and batch size
+    log_every = int(X.shape[0] / wandb.config.batch_size / 10)
+    model.fit([X, Y], val_views=[X_test, Y_test], true=true, log_every=log_every)
 
 
 if __name__ == '__main__':
