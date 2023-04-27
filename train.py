@@ -23,7 +23,7 @@ def get_arguments():
         "--data", type=str, default="mnist", help="Data directory"
     )
     parser.add_argument(
-        "--objective", type=str, default="pls", help="Objective function"
+        "--objective", type=str, default="cca", help="Objective function"
     )
     parser.add_argument(
         "--seed", type=int, default=123, help="Random seed"
@@ -37,13 +37,13 @@ def get_arguments():
         "--batch_size", type=int, default=32, help="Batch size"
     )
     parser.add_argument(
-        "--epochs", type=int, default=2, help="Number of epochs"
+        "--epochs", type=int, default=5, help="Number of epochs"
     )
     parser.add_argument(
-        "--lr", type=float, default=1e-4, help="Learning rate"
+        "--lr", type=float, default=1e-2, help="Learning rate"
     )
     parser.add_argument(
-        "--momentum", type=bool, default=0.9, help="Use Nesterov momentum"
+        "--momentum", type=bool, default=0.1, help="Use Nesterov momentum"
     )
 
     # GammaEigenGame
@@ -87,6 +87,7 @@ def main():
         learning_rate=wandb.config.lr,
         latent_dims=wandb.config.components,
         momentum=wandb.config.momentum,
+        random_state=wandb.config.seed
     )
 
     if wandb.config.data == "synthetic":
