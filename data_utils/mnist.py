@@ -23,7 +23,7 @@ from os import path
 
 import numpy as np
 
-_DATA = "/tmp/jax_example_data/"
+_DATA = "data/MNIST"
 
 
 def _download(url, filename):

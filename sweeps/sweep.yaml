@@ -4,9 +4,10 @@ command:
   - ${program}
   - ${args}
 program: train.py
+project: DeltaEigenGame
 method: grid
 parameters:
-  experiment:
+  objective:
     values:
       - cca
       - pls
