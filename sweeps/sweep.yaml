@@ -21,9 +21,12 @@ parameters:
       - mnist
       - cifar
       - mediamill
+      - xrmb
   batch_size:
     values:
       - 32
+      - 64
+      - 128
   components:
     values:
       - 8

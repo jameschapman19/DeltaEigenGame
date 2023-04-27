@@ -18,6 +18,7 @@ parameters:
       - mnist
       - cifar
       - mediamill
+      - xrmb
   batch_size:
     values:
       - 32
@@ -39,8 +40,7 @@ parameters:
       - 0.0001
   nesterov:
     values:
-      - True
-      - False
+      - 0
   gamma:
     values:
       - 0.01
