@@ -6,7 +6,7 @@ command:
 program: train.py
 method: grid
 parameters:
-  experiment:
+  objective:
     values:
       - pls
   model:
