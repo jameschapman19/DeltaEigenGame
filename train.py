@@ -17,7 +17,7 @@ def get_arguments():
 
     # Experiment
     parser.add_argument(
-        "--model", type=str, default="ghagep", help="Model to train"
+        "--model", type=str, default="delta", help="Model to train"
     )
     parser.add_argument(
         "--data", type=str, default="mnist", help="Data directory"
@@ -43,7 +43,7 @@ def get_arguments():
         "--lr", type=float, default=1e-2, help="Learning rate"
     )
     parser.add_argument(
-        "--momentum", type=bool, default=0.5, help="Use Nesterov momentum"
+        "--momentum", type=bool, default=0.9, help="Use Nesterov momentum"
     )
 
     # GammaEigenGame

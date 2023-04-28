@@ -23,8 +23,8 @@ from os import path
 
 import numpy as np
 
-PROJECT_DIR = "C:/Users/chapm/PycharmProjects/DeltaEigenGame/MNIST"
-CLUSTER_DIR = "/cluster/project9/CCA_public/MNIST"
+PROJECT_DIR = "C:/Users/chapm/PycharmProjects/DeltaEigenGame/data/MNIST"
+CLUSTER_DIR = "/cluster/project9/CCA_public/data/MNIST"
 
 if os.path.exists(PROJECT_DIR):
     _DATA = PROJECT_DIR
