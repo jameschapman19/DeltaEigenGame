@@ -10,7 +10,7 @@ from data_utils import cifar_dataset, mnist_dataset, mediamill_dataset, xrmb_dat
 
 os.makedirs('./results', exist_ok=True)
 
-for data in ['mnist', 'cifar', 'mediamill', 'xrmb']:
+for data in ['mediamill','mnist', 'cifar', 'xrmb']:
     if data == 'cifar':
         X, Y, X_test, Y_test = cifar_dataset()
     elif data == 'mnist':
@@ -24,21 +24,25 @@ for data in ['mnist', 'cifar', 'mediamill', 'xrmb']:
 
     from sklearn.preprocessing import StandardScaler
 
-    X = StandardScaler().fit_transform(X)
-    Y = StandardScaler().fit_transform(Y)
-    X_test = StandardScaler().fit_transform(X_test)
-    Y_test = StandardScaler().fit_transform(Y_test)
+    components=5
 
-    cca = CCA(latent_dims=10,scale=False,centre=False).fit((X, Y))
+    x_scaler=StandardScaler()
+    y_scaler=StandardScaler()
+    X=x_scaler.fit_transform(X)
+    Y=y_scaler.fit_transform(Y)
+    X_test=x_scaler.transform(X_test)
+    Y_test=y_scaler.transform(Y_test)
+
+    cca = CCA(latent_dims=components,scale=True,centre=True).fit((X, Y))
     cca_score_train = cca.score((X, Y))
     np.save(f'./results/{data}_cca_score_train.npy', cca_score_train)
     cca_score_test = cca.score((X_test, Y_test))
     np.save(f'./results/{data}_cca_score_test.npy', cca_score_test)
 
-    pls = PLS(latent_dims=10, scale=False, centre=False).fit((X, Y))
+    pls = PLS(latent_dims=components, scale=False, centre=False).fit((X, Y))
     z = pls.transform((X, Y))
-    pls_score_train = np.diag(np.cov(z[0].T, z[1].T)[:10, 10:])
+    pls_score_train = np.diag(np.cov(z[0].T, z[1].T)[:components, components:])
     np.save(f'./results/{data}_pls_score_train.npy', pls_score_train)
     z = pls.transform((X_test, Y_test))
-    pls_score_test = np.diag(np.cov(z[0].T, z[1].T)[:10, 10:])
+    pls_score_test = np.diag(np.cov(z[0].T, z[1].T)[:components, components:])
     np.save(f'./results/{data}_pls_score_test.npy', pls_score_test)

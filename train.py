@@ -17,13 +17,13 @@ def get_arguments():
 
     # Experiment
     parser.add_argument(
-        "--model", type=str, default="gamma", help="Model to train"
+        "--model", type=str, default="ghagep", help="Model to train"
     )
     parser.add_argument(
-        "--data", type=str, default="cifar", help="Data directory"
+        "--data", type=str, default="mediamill", help="Data directory"
     )
     parser.add_argument(
-        "--objective", type=str, default="pls", help="Objective function"
+        "--objective", type=str, default="cca", help="Objective function"
     )
     parser.add_argument(
         "--seed", type=int, default=0, help="Random seed"
@@ -43,7 +43,7 @@ def get_arguments():
         "--lr", type=float, default=1e-3, help="Learning rate"
     )
     parser.add_argument(
-        "--momentum", type=bool, default=0, help="Use Nesterov momentum"
+        "--momentum", type=bool, default=0.9, help="Use Nesterov momentum"
     )
 
     # GammaEigenGame
@@ -111,10 +111,12 @@ def main():
         raise NotImplementedError
 
     from sklearn.preprocessing import StandardScaler
-    X = StandardScaler().fit_transform(X)
-    Y = StandardScaler().fit_transform(Y)
-    X_test = StandardScaler().fit_transform(X_test)
-    Y_test = StandardScaler().fit_transform(Y_test)
+    x_scaler=StandardScaler()
+    y_scaler=StandardScaler()
+    X=x_scaler.fit_transform(X)
+    Y=y_scaler.fit_transform(Y)
+    X_test=x_scaler.transform(X_test)
+    Y_test=y_scaler.transform(Y_test)
 
     if wandb.config.data == "synthetic":
         true = {"train": svdvals(X.T@Y)[:5].sum(), "val": tvc([np.eye(10), np.eye(10)], [X_test, Y_test]).sum()}
