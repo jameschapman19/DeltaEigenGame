@@ -23,8 +23,13 @@ from os import path
 
 import numpy as np
 
-_DATA = "data/MNIST"
+PROJECT_DIR = "C:/Users/chapm/PycharmProjects/DeltaEigenGame/MNIST"
+CLUSTER_DIR = "/cluster/project9/CCA_public/MNIST"
 
+if os.path.exists(PROJECT_DIR):
+    _DATA = PROJECT_DIR
+else:
+    _DATA = CLUSTER_DIR
 
 def _download(url, filename):
     """Download a url to a file in the JAX data temp directory."""

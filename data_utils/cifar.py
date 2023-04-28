@@ -2,7 +2,7 @@ import numpy as np
 from scipy.io import loadmat
 
 PROJECT_DIR = "C:/Users/chapm/PycharmProjects/DeltaEigenGame/"
-CLUSTER_DIR = "/home/jchapman/projects/DeltaEigengame/"
+CLUSTER_DIR = "/cluster/project9/CCA_public/"
 
 
 def cifar():
