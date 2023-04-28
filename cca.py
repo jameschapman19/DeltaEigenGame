@@ -55,9 +55,9 @@ class SGHA(Tracker, CCAGHAGEP):
 
 
 class GammaEigenGame(Tracker, CCAEigenGame):
-    def __init__(self, gamma=1e-1, rho=1e-3, **kwargs):
-        self.gamma = gamma
-        self.rho = rho
+    def __init__(self, **kwargs):
+        self.gamma = kwargs.pop('gamma', 1e-1)
+        self.rho = kwargs.pop('rho', 1e-10)
         self.BU = None
         super().__init__(**kwargs)
 
@@ -68,10 +68,9 @@ class GammaEigenGame(Tracker, CCAEigenGame):
         if self.BU is None:
             self.BU = Bw
         denominator = np.diag(u.T @ self.BU)
-        denominator_y = np.sqrt(np.where(denominator > self.rho, denominator, self.rho))
-        denominator_By = np.sqrt(np.clip(denominator, self.rho, np.inf))
-        y = u / denominator_y
-        By = self.BU / denominator_By
+        denominator = np.where(denominator > self.rho, np.sqrt(denominator), self.rho)
+        y = u / denominator
+        By = self.BU / denominator
         Ay, _, _, _ = self._get_terms(views, y)
         rewards = Aw * np.diag(wBw) - Bw * np.diag(wAw)
         penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(np.tril(u.T @ By, -1) @ Ay.T @ u)

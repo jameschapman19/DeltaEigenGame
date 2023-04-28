@@ -25,6 +25,7 @@ class Tracker:
                 self._update(sample["views"])
                 i += 1
                 if i % log_every == 0:
+                    wandb.log({"Samples": (i+1)*self.batch_size})
                     tvc = -self.objective(views, u=self.weights)
                     wandb.log({"Train TVC": tvc})
                     if true is not None:
@@ -72,23 +73,24 @@ class SGHA(Tracker, PLSGHAGEP):
 
 class GammaEigenGame(Tracker, PLSEigenGame):
     def __init__(self, **kwargs):
-        self.gamma = kwargs.pop('gamma', 1)
-        self.rho = kwargs.pop('rho', 1)
+        self.gamma = kwargs.pop('gamma', 1e-1)
+        self.rho = kwargs.pop('rho', 1e-10)
         self.BU = None
         super().__init__(**kwargs)
 
     def grads(self, views, u=None):
+        u /= np.linalg.norm(u, axis=0, keepdims=True)
+        self.weights /= np.linalg.norm(self.weights, axis=0, keepdims=True)
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
         if self.BU is None:
             self.BU = Bw
         denominator = np.diag(u.T @ self.BU)
-        denominator_y = np.sqrt(np.where(denominator > self.rho, denominator, self.rho))
-        denominator_By = np.sqrt(np.clip(denominator, self.rho, np.inf))
-        y = u / denominator_y
-        By = self.BU / denominator_By
+        denominator = np.where(denominator > self.rho, np.sqrt(denominator), self.rho)
+        y = u / denominator
+        By = self.BU / denominator
         Ay, _, _, _ = self._get_terms(views, y)
         rewards = Aw * np.diag(wBw) - Bw * np.diag(wAw)
         penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(np.tril(u.T @ By, -1) @ Ay.T @ u)
-        self.BU = self.BU + self.learning_rate * (Bw - self.BU)
+        self.BU = self.BU + self.gamma * (Bw - self.BU)
         grads = rewards - penalties
         return -grads
