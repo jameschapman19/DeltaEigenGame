@@ -20,16 +20,16 @@ def get_arguments():
         "--model", type=str, default="gamma", help="Model to train"
     )
     parser.add_argument(
-        "--data", type=str, default="mediamill", help="Data directory"
+        "--data", type=str, default="cifar", help="Data directory"
     )
     parser.add_argument(
-        "--objective", type=str, default="cca", help="Objective function"
+        "--objective", type=str, default="pls", help="Objective function"
     )
     parser.add_argument(
         "--seed", type=int, default=0, help="Random seed"
     )
     parser.add_argument(
-        "--components", type=int, default=1, help="Number of components"
+        "--components", type=int, default=4, help="Number of components"
     )
 
     # Parameters
@@ -37,10 +37,10 @@ def get_arguments():
         "--batch_size", type=int, default=100, help="Batch size"
     )
     parser.add_argument(
-        "--epochs", type=int, default=100, help="Number of epochs"
+        "--epochs", type=int, default=5, help="Number of epochs"
     )
     parser.add_argument(
-        "--lr", type=float, default=5e-3, help="Learning rate"
+        "--lr", type=float, default=1e-3, help="Learning rate"
     )
     parser.add_argument(
         "--momentum", type=bool, default=0, help="Use Nesterov momentum"
@@ -87,7 +87,9 @@ def main():
         learning_rate=wandb.config.lr,
         latent_dims=wandb.config.components,
         momentum=wandb.config.momentum,
-        random_state=wandb.config.seed
+        random_state=wandb.config.seed,
+        scale=False,
+        centre=False,
     )
     if wandb.config.model == "gamma":
         model.gamma = wandb.config.gamma
@@ -95,9 +97,6 @@ def main():
     if wandb.config.data == "synthetic":
         X = np.random.rand(100, 10)
         Y = np.random.rand(100, 10)
-        from sklearn.preprocessing import StandardScaler
-        X = StandardScaler().fit_transform(X)
-        Y = StandardScaler().fit_transform(Y)
         X_test = np.random.rand(100, 10)
         Y_test = np.random.rand(100, 10)
     elif wandb.config.data == "cifar":
@@ -111,12 +110,18 @@ def main():
     else:
         raise NotImplementedError
 
+    from sklearn.preprocessing import StandardScaler
+    X = StandardScaler().fit_transform(X)
+    Y = StandardScaler().fit_transform(Y)
+    X_test = StandardScaler().fit_transform(X_test)
+    Y_test = StandardScaler().fit_transform(Y_test)
+
     if wandb.config.data == "synthetic":
         true = {"train": svdvals(X.T@Y)[:5].sum(), "val": tvc([np.eye(10), np.eye(10)], [X_test, Y_test]).sum()}
     else:
         true = {"train": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy')[:wandb.config.components].sum(), "val": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy')[:wandb.config.components].sum()}
     # log every 5% of an epoch for a given dataset and batch size
-    log_every = int(X.shape[0] / wandb.config.batch_size / 20)
+    log_every = 100
     model.fit([X, Y], val_views=[X_test, Y_test], true=true, log_every=log_every)
 
 

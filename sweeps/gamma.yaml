@@ -22,7 +22,6 @@ parameters:
   batch_size:
     values:
       - 100
-      - 32
   components:
     values:
       - 4
@@ -34,11 +33,9 @@ parameters:
       - 0
   lr:
     values:
-      - 10
-      - 1
-      - 0.1
+      - 0.01
+      - 0.001
+      - 0.0001
   gamma:
     values:
-      - 10
-      - 1
-      - 0.1
+      - 0.9

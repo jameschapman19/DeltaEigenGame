@@ -1,6 +1,7 @@
 from typing import Iterable
 
 import numpy as np
+import scipy.linalg
 from cca_zoo.models import PLSEigenGame, PLSGHAGEP
 from cca_zoo.models._iterative._base import _default_initializer
 
@@ -25,24 +26,24 @@ class Tracker:
                 self._update(sample["views"])
                 i += 1
                 if i % log_every == 0:
-                    wandb.log({"Samples": (i+1)*self.batch_size})
-                    tvc = -self.objective(views, u=self.weights)
-                    wandb.log({"Train TVC": tvc})
+                    u=[self.qr_weights(w) for w in self.weights]
+                    tvc = self.tvc(views, u=u)
+                    wandb.log({"Train TVC": tvc}, step=i)
                     if true is not None:
                         pvc = tvc / true['train']
-                        wandb.log({"Train PVC": pvc})
+                        wandb.log({"Train PVC": pvc}, step=i)
                     if val_views is not None:
-                        tvc = -self.objective(val_views, u=self.weights)
-                        wandb.log({"Val TVC": tvc})
+                        tvc = self.tvc(val_views, u=u)
+                        wandb.log({"Val TVC": tvc}, step=i)
                         if true is not None:
                             pvc = tvc / true['val']
-                            wandb.log({"Val PVC": pvc})
+                            wandb.log({"Val PVC": pvc}, step=i)
         return self
 
-    def tvc(self, views):
-        z = [view @ w for view, w in zip(views, self.weights)]
-        m = np.cov(np.concatenate(z, axis=1).T)[self.latent_dims:, :self.latent_dims]
-        return np.trace(m)
+    def tvc(self, views, u):
+        z = [view @ w for view, w in zip(views, u)]
+        s=scipy.linalg.svdvals(np.cov(*z,rowvar=False)[0:self.latent_dims, self.latent_dims:])
+        return s.sum()
 
     @staticmethod
     def qr_weights(weights):
@@ -62,7 +63,11 @@ class GHAGEP(Tracker, PLSGHAGEP):
 class StochasticPower(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        # TODO
+        return Aw
+
+    def _gradient_step(self, weights, velocity):
+        weights= weights + velocity
+        return weights/np.linalg.norm(weights, axis=0, keepdims=True)
 
 
 class SGHA(Tracker, PLSGHAGEP):

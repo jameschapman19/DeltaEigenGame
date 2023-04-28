@@ -22,13 +22,20 @@ for data in ['mnist', 'cifar', 'mediamill', 'xrmb']:
     else:
         raise ValueError('Dataset not found')
 
-    # cca = CCA(latent_dims=10).fit((X, Y))
-    # cca_score_train = cca.score((X, Y))
-    # np.save(f'./results/{data}_cca_score_train.npy', cca_score_train)
-    # cca_score_test = cca.score((X_test, Y_test))
-    # np.save(f'./results/{data}_cca_score_test.npy', cca_score_test)
+    from sklearn.preprocessing import StandardScaler
 
-    pls = PLS(latent_dims=10).fit((X, Y))
+    X = StandardScaler().fit_transform(X)
+    Y = StandardScaler().fit_transform(Y)
+    X_test = StandardScaler().fit_transform(X_test)
+    Y_test = StandardScaler().fit_transform(Y_test)
+
+    cca = CCA(latent_dims=10,scale=False,centre=False).fit((X, Y))
+    cca_score_train = cca.score((X, Y))
+    np.save(f'./results/{data}_cca_score_train.npy', cca_score_train)
+    cca_score_test = cca.score((X_test, Y_test))
+    np.save(f'./results/{data}_cca_score_test.npy', cca_score_test)
+
+    pls = PLS(latent_dims=10, scale=False, centre=False).fit((X, Y))
     z = pls.transform((X, Y))
     pls_score_train = np.diag(np.cov(z[0].T, z[1].T)[:10, 10:])
     np.save(f'./results/{data}_pls_score_train.npy', pls_score_train)

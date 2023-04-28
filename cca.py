@@ -17,26 +17,28 @@ class Tracker:
         )
         self.weights = initializer.fit(views).weights
         self.weights = [weights.astype(np.float32) for weights in self.weights]
-        for _ in range(self.epochs):
-            for i, sample in enumerate(train_dataloader):
+        i = 0
+        for e in range(self.epochs):
+            for s, sample in enumerate(train_dataloader):
                 self._update(sample["views"])
+                i += 1
                 if i % log_every == 0:
                     tcc = self.tcc(views)
-                    wandb.log({"Train TCC": tcc})
+                    wandb.log({"Train TCC": tcc}, step=i)
                     if true is not None:
                         pcc = tcc / true['train']
-                        wandb.log({"Train PCC": pcc})
+                        wandb.log({"Train PCC": pcc}, step=i)
                     if val_views is not None:
                         tcc= self.tcc(val_views)
-                        wandb.log({"Val TCC": tcc})
+                        wandb.log({"Val TCC": tcc}, step=i)
                         if true is not None:
                             pcc=tcc / true['val']
-                            wandb.log({"Val PCC": pcc})
+                            wandb.log({"Val PCC": pcc}, step=i)
         return self
 
     def tcc(self, views):
         z = self.transform(views)
-        tcc = MCCA(latent_dims=self.latent_dims).fit(z).score(z)
+        tcc = MCCA(latent_dims=self.latent_dims, scale=False, centre=False).fit(z).score(z)
         return tcc.sum()
 
 
