@@ -39,3 +39,7 @@ parameters:
   gamma:
     values:
       - 0.9
+  momentum:
+    values:
+      - 0.9
+      - 0
