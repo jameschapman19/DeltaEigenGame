@@ -29,7 +29,7 @@ def get_arguments():
         "--seed", type=int, default=0, help="Random seed"
     )
     parser.add_argument(
-        "--components", type=int, default=4, help="Number of components"
+        "--components", type=int, default=1, help="Number of components"
     )
 
     # Parameters
@@ -37,10 +37,10 @@ def get_arguments():
         "--batch_size", type=int, default=100, help="Batch size"
     )
     parser.add_argument(
-        "--epochs", type=int, default=1, help="Number of epochs"
+        "--epochs", type=int, default=100, help="Number of epochs"
     )
     parser.add_argument(
-        "--lr", type=float, default=0.5, help="Learning rate"
+        "--lr", type=float, default=5e-3, help="Learning rate"
     )
     parser.add_argument(
         "--momentum", type=bool, default=0, help="Use Nesterov momentum"
@@ -48,7 +48,7 @@ def get_arguments():
 
     # GammaEigenGame
     parser.add_argument(
-        "--gamma", type=float, default=0.05, help="Gamma"
+        "--gamma", type=float, default=0.9, help="Gamma"
     )
 
     return parser
@@ -115,8 +115,8 @@ def main():
         true = {"train": svdvals(X.T@Y)[:5].sum(), "val": tvc([np.eye(10), np.eye(10)], [X_test, Y_test]).sum()}
     else:
         true = {"train": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy')[:wandb.config.components].sum(), "val": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy')[:wandb.config.components].sum()}
-    # log every 10% of an epoch for a given dataset and batch size
-    log_every = int(X.shape[0] / wandb.config.batch_size / 10)
+    # log every 5% of an epoch for a given dataset and batch size
+    log_every = int(X.shape[0] / wandb.config.batch_size / 20)
     model.fit([X, Y], val_views=[X_test, Y_test], true=true, log_every=log_every)
 
 

@@ -8,7 +8,7 @@ import wandb
 
 
 class Tracker:
-    def fit(self, views: Iterable[np.ndarray], y=None, val_views: Iterable[np.ndarray] = None, log_every=100,
+    def fit(self, views: Iterable[np.ndarray], y=None, val_views: Iterable[np.ndarray] = None, log_every=1,
             true=None):
         views = self._validate_inputs(views)
         val_views = [self.scalers[i].transform(view) for i, view in enumerate(val_views)]
@@ -74,13 +74,11 @@ class SGHA(Tracker, PLSGHAGEP):
 class GammaEigenGame(Tracker, PLSEigenGame):
     def __init__(self, **kwargs):
         self.gamma = kwargs.pop('gamma', 1e-1)
-        self.rho = kwargs.pop('rho', 1e-10)
         self.BU = None
         super().__init__(**kwargs)
+        self.rho=1e-10
 
     def grads(self, views, u=None):
-        u /= np.linalg.norm(u, axis=0, keepdims=True)
-        self.weights /= np.linalg.norm(self.weights, axis=0, keepdims=True)
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
         if self.BU is None:
             self.BU = Bw
@@ -94,3 +92,7 @@ class GammaEigenGame(Tracker, PLSEigenGame):
         self.BU = self.BU + self.gamma * (Bw - self.BU)
         grads = rewards - penalties
         return -grads
+
+    def _gradient_step(self, weights, velocity):
+        weights= weights + velocity
+        return weights/np.linalg.norm(weights, axis=0, keepdims=True)

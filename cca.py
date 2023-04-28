@@ -7,7 +7,7 @@ from cca_zoo.models._iterative._base import _default_initializer
 
 
 class Tracker:
-    def fit(self, views: Iterable[np.ndarray], y=None, val_views: Iterable[np.ndarray] = None, log_every=100,
+    def fit(self, views: Iterable[np.ndarray], y=None, val_views: Iterable[np.ndarray] = None, log_every=1,
             true=None):
         views = self._validate_inputs(views)
         self._check_params()
@@ -57,23 +57,26 @@ class SGHA(Tracker, CCAGHAGEP):
 class GammaEigenGame(Tracker, CCAEigenGame):
     def __init__(self, **kwargs):
         self.gamma = kwargs.pop('gamma', 1e-1)
-        self.rho = kwargs.pop('rho', 1e-10)
-        self.BU = None
+        self.Bu = None
         super().__init__(**kwargs)
+        self.rho=1e-10
 
     def grads(self, views, u=None):
-        u /= np.linalg.norm(u, axis=0, keepdims=True)
-        self.weights /= np.linalg.norm(self.weights, axis=0, keepdims=True)
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        if self.BU is None:
-            self.BU = Bw
-        denominator = np.diag(u.T @ self.BU)
+        check=np.diag(wAw)/np.diag(wBw)
+        if self.Bu is None:
+            self.Bu = u
+        denominator = np.diag(u.T @ self.Bu)
         denominator = np.where(denominator > self.rho, np.sqrt(denominator), self.rho)
         y = u / denominator
-        By = self.BU / denominator
+        By = self.Bu / denominator
         Ay, _, _, _ = self._get_terms(views, y)
         rewards = Aw * np.diag(wBw) - Bw * np.diag(wAw)
         penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(np.tril(u.T @ By, -1) @ Ay.T @ u)
-        self.BU = self.BU + self.gamma * (Bw - self.BU)
+        self.Bu = self.Bu + self.gamma * (Bw - self.Bu)
         grads = rewards - penalties
         return -grads
+
+    def _gradient_step(self, weights, velocity):
+        weights= weights + velocity
+        return weights/np.linalg.norm(weights, axis=0, keepdims=True)
