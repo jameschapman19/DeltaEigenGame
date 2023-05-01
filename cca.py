@@ -21,7 +21,7 @@ class Tracker:
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
                 self._update(sample["views"])
-                i += 1
+                i += self.batch_size
                 if i % log_every == 0:
                     tcc = self.tcc(views)
                     wandb.log({"Train TCC": tcc}, step=i)
