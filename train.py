@@ -17,7 +17,7 @@ def get_arguments():
 
     # Experiment
     parser.add_argument(
-        "--model", type=str, default="ghagep", help="Model to train"
+        "--model", type=str, default="gamma", help="Model to train"
     )
     parser.add_argument(
         "--data", type=str, default="mediamill", help="Data directory"
@@ -37,7 +37,7 @@ def get_arguments():
         "--batch_size", type=int, default=100, help="Batch size"
     )
     parser.add_argument(
-        "--epochs", type=int, default=5, help="Number of epochs"
+        "--epochs", type=int, default=1, help="Number of epochs"
     )
     parser.add_argument(
         "--lr", type=float, default=1e-3, help="Learning rate"
