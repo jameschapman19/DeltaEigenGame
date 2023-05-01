@@ -2,8 +2,9 @@ import numpy as np
 
 
 class GEPSolver:
-    def __init__(self, learning_rate=1., epochs=5000, components=1, method="eg", return_eigvals=True, line_search=False,
+    def __init__(self, learning_rate=1e-3, epochs=5000, components=3, method="eg", return_eigvals=True, line_search=False,
                  momentum=0.):
+        self.u = None
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.components = components
@@ -14,10 +15,12 @@ class GEPSolver:
         self.line_search = line_search
         self.momentum = momentum
 
-    def fit(self, A, B):
-        u = np.random.rand(A.shape[1], self.components)
-        u /= np.sqrt(np.diag(u.T @ B @ u))
-        w = np.zeros_like(u)
+    def fit(self, A, B, u=None):
+        if u is None:
+            u=np.ones((A.shape[0], self.components))
+            u /= np.sqrt(np.diag(u.T @ B @ u))
+        else:
+            u= u.copy()
         self.velocity = np.zeros_like(u)
         self.track = []
         for _ in range(self.epochs):
@@ -27,11 +30,14 @@ class GEPSolver:
                 self.backtracking_line_search(A, B, u, grads)
             self.velocity = self.momentum * self.velocity - self.learning_rate * grads
             u += self.velocity
-            self.track.append(self.objective(A, B, u))
+            self.track.append(-self.objective(A, B, u))
+        self.u = u
         if self.return_eigvals:
-            return u, np.diag(u.T @ A @ u) / np.diag(u.T @ B @ u)
-        else:
-            return u
+            uAu = u.T @ A @ u
+            uBu = u.T @ B @ u
+            vals=np.diag(uAu) / np.diag(uBu)
+            self.eigenvalues = vals
+        return self
 
     def grads(self, A, B, u):
         Aw = A @ u
@@ -39,20 +45,18 @@ class GEPSolver:
         wAw = u.T @ Aw
         wBw = u.T @ Bw
         if self.method == "delta":
-            grads = 2 * Aw - (Aw @ np.triu(wBw) + Bw @ np.triu(wAw))
-        elif self.method == "delta sans order":
+            grads = 2 * Aw -(Aw @ np.triu(wBw) + Bw @ np.triu(wAw))
+        elif self.method == "delta2":
+            grads = 2 * Aw -(Aw @ np.triu(wBw) + Bw @ np.triu(wAw)) - (Aw @ np.triu(wBw,1) + Bw @ np.triu(wAw,1))
+        elif self.method == "deltaso":
             grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
-        elif self.method == "gha sans order":
+        elif self.method == "ghaso":
             grads = 2 * Aw - 2 * Bw @ wAw
         elif self.method == "gha":
             grads = 2 * Aw - 2 * Bw @ np.triu(wAw)
         elif self.method == "gamma":
             u /= np.linalg.norm(u, axis=0)
             grads = self.gamma_grads(A, B, u)
-        elif self.method == "anna":
-            # replace diagonal of wBw with zeros
-            wBw = wBw - np.diag(np.diag(wBw))
-            grads = Aw - Bw * np.diag(wAw) - (Aw @ wBw)
         else:
             raise ValueError("Invalid method")
         return -grads
@@ -62,20 +66,7 @@ class GEPSolver:
         Bw = B @ u
         wAw = u.T @ Aw
         wBw = u.T @ Bw
-        if self.method == "delta":
-            return -2 * np.trace(wAw) + np.diag(wAw) @ np.diag(wBw) + 2 * np.triu(wAw * wBw, 1).sum()
-        elif self.method == "delta sans order":
-            return -2 * np.trace(wAw) + np.diag(wAw) @ np.diag(wBw) + 2 * np.triu(wAw * wBw, 1).sum()
-        elif self.method == "gha":
-            return -2 * np.trace(wAw) + np.diag(wAw) @ np.diag(wBw) + 2 * np.triu(wAw * wBw, 1).sum()
-        elif self.method == "gha sans order":
-            return -2 * np.trace(wAw) + np.diag(wAw) @ np.diag(wBw) + 2 * np.triu(wAw * wBw, 1).sum()
-        elif self.method == "gamma":
-            return -np.diag(wAw) / np.diag(wBw)
-        elif self.method == "anna":
-            return -2 * np.trace(wAw) + np.diag(wAw) @ np.diag(wBw) + 2 * np.triu(wAw * wBw, 1).sum()
-        else:
-            raise ValueError("Invalid method")
+        return -2*np.trace(wAw) + np.trace(wAw@wBw)
 
     def backtracking_line_search(self, A, B, u, grads):
         while self.objective(A, B, u - self.learning_rate * grads) > self.objective(A, B,
@@ -100,52 +91,56 @@ class GEPSolver:
 
 
 def main():
-    p = 10
+    p = 20
     # A random generalized eigenvalue problem with symetric matrices A and B where A is not positive definite
     A = np.random.rand(p, p)
     B = np.random.rand(p, p)
     A = A.T @ A
     U, S, Vt = np.linalg.svd(A)
-    # make S decay linearly
-    S = np.arange(-1,-3,)
-    A = U @ np.diag(10**S) @ Vt
-    # B = B.T @ B
+    S = np.arange(1,p+1,1)
+    A = U @ np.diag(S) @ U.T
     B = np.eye(p)
+    momentum=0.5
+    components=3
+    u=np.random.rand(p,components)
+    #u /= np.sqrt(np.diag(u.T @ B @ u))
+    
+    
 
     from scipy.linalg import eigh
     # get largest eigenvalue and eigenvector
     w, u_ = eigh(A, B)
     v_true = np.diag(u_.T @ A @ u_)
-    anna = GEPSolver(components=10, method="anna", learning_rate=1e-6, momentum=0.9)
-    u_a, v_a = anna.fit(A, B)
-    gha = GEPSolver(components=10, method="gha", learning_rate=1e-6, momentum=0.9)
-    u_gha, v_gha = gha.fit(A, B)
-    delta_sans_order = GEPSolver(components=10, method="delta sans order", learning_rate=1e-6, momentum=0.9)
-    u_d_sans_order, v_d_sans_order = delta_sans_order.fit(A, B)
-    delta = GEPSolver(components=10, method="delta", learning_rate=1e-6)
-    u_d, v_d = delta.fit(A, B)
-    delta_n = GEPSolver(components=10, method="delta", learning_rate=1e-6, momentum=0.9)
-    u_d_n, v_d_n = delta_n.fit(A, B)
-    gha_sans_order = GEPSolver(components=10, method="gha sans order", learning_rate=1e-6, momentum=0.9)
-    u_gha_sans_order, v_gha_sans_order = gha_sans_order.fit(A, B)
-    delta_ls = GEPSolver(components=10, method="delta sans order", learning_rate=1, line_search=True)
-    u_delta_ls, v_delta_ls = delta_ls.fit(A, B)
+    # Delta versions
+    delta = GEPSolver(method="delta", momentum=momentum).fit(A,B,u=u)
+    delta_bls = GEPSolver(method="delta", line_search=True, learning_rate=1).fit(A,B,u=u)
+    deltaso = GEPSolver(method="deltaso", momentum=momentum).fit(A,B,u=u)
+    # GHAGEP versions
+    gha = GEPSolver(method="gha", momentum=momentum).fit(A,B,u=u)
+    ghaso = GEPSolver(method="ghaso",momentum=momentum).fit(A,B,u=u)
+
+    # print eigenvalues
+    print("True eigenvalues: ", v_true)
+    # print("Delta eigenvalues: ", delta.eigenvalues)
+    print("Delta BLS eigenvalues: ", delta_bls.eigenvalues)
+    # print("Deltaso eigenvalues: ", deltaso.eigenvalues)
+    print("GHA eigenvalues: ", gha.eigenvalues)
+    # print("GHASO eigenvalues: ", ghaso.eigenvalues)
+
 
     # plot the objective
     import matplotlib.pyplot as plt
-    plt.plot(delta_n.track, label="momentum 0.9")
-    plt.plot(delta.track, label="gradient descent")
-    plt.plot(delta_sans_order.track, label="delta sans order")
-    plt.plot(gha_sans_order.track, label="gha sans order")
+    plt.plot(delta.track, label="delta")
+    plt.plot(delta_bls.track, label="delta bls")
+    # plt.plot(deltaso.track, label="deltaso")
     plt.plot(gha.track, label="gha")
-    plt.plot(delta_ls.track, label="delta line search")
-    plt.plot(np.ones_like(delta.track) * (-v_true.sum()), label="true")
-    plt.plot(anna.track, label="anna")
-    plt.xlabel("iterations")
-    plt.ylabel("objective")
+    plt.yscale("log")
+    plt.ylim(1e-10,1e10)
     plt.legend()
     plt.show()
     print()
+
+
 
 
 if __name__ == '__main__':

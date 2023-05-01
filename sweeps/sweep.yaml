@@ -14,8 +14,9 @@ parameters:
   model:
     values:
       - delta
-      - ghagep
+      - gha
       - sgha
+      - utility
   data:
     values:
       - mnist

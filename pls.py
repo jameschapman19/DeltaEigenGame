@@ -26,7 +26,7 @@ class Tracker:
                 self._update(sample["views"])
                 i += self.batch_size
                 if i % log_every == 0:
-                    u=[self.qr_weights(w) for w in self.weights]
+                    u = [self.qr_weights(w) for w in self.weights]
                     tvc = self.tvc(views, u=u)
                     wandb.log({"Train TVC": tvc}, step=i)
                     if true is not None:
@@ -42,7 +42,7 @@ class Tracker:
 
     def tvc(self, views, u):
         z = [view @ w for view, w in zip(views, u)]
-        s=scipy.linalg.svdvals(np.cov(*z,rowvar=False)[0:self.latent_dims, self.latent_dims:])
+        s = scipy.linalg.svdvals(np.cov(*z, rowvar=False)[0:self.latent_dims, self.latent_dims:])
         return s.sum()
 
     @staticmethod
@@ -55,9 +55,17 @@ class Tracker:
 class DeltaEigenGame(Tracker, PLSEigenGame):
     pass
 
+class Utility(Tracker, PLSEigenGame):
+    def grads(self, views, u=None):
+        Aw, Bw, wAw, wBw = self._get_terms(views, u)
+        grads = 2 * Aw - (Aw @ wBw * np.sign(np.diag(wAw)) + Bw @ wAw)
+        return -grads
 
 class GHAGEP(Tracker, PLSGHAGEP):
-    pass
+    def grads(self, views, u=None):
+        Aw, Bw, wAw, wBw = self._get_terms(views, u)
+        grads = 2*Aw - Bw @ np.triu(wAw)
+        return -grads
 
 
 class StochasticPower(Tracker, PLSGHAGEP):
@@ -66,8 +74,8 @@ class StochasticPower(Tracker, PLSGHAGEP):
         return Aw
 
     def _gradient_step(self, weights, velocity):
-        weights= weights + velocity
-        return weights/np.linalg.norm(weights, axis=0, keepdims=True)
+        weights = weights + velocity
+        return weights / np.linalg.norm(weights, axis=0, keepdims=True)
 
 
 class SGHA(Tracker, PLSGHAGEP):
@@ -81,7 +89,7 @@ class GammaEigenGame(Tracker, PLSEigenGame):
         self.gamma = kwargs.pop('gamma', 1e-1)
         self.BU = None
         super().__init__(**kwargs)
-        self.rho=1e-10
+        self.rho = 1e-10
 
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
@@ -99,5 +107,5 @@ class GammaEigenGame(Tracker, PLSEigenGame):
         return -grads
 
     def _gradient_step(self, weights, velocity):
-        weights= weights + velocity
-        return weights/np.linalg.norm(weights, axis=0, keepdims=True)
+        weights = weights + velocity
+        return weights / np.linalg.norm(weights, axis=0, keepdims=True)
