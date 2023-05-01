@@ -123,7 +123,7 @@ def main():
     else:
         true = {"train": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy')[:wandb.config.components].sum(), "val": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy')[:wandb.config.components].sum()}
     # log every 5% of an epoch for a given dataset and batch size
-    log_every = 100
+    log_every = int((X.shape[0] / wandb.config.batch_size) / 20)
     model.fit([X, Y], val_views=[X_test, Y_test], true=true, log_every=log_every)
 
 
