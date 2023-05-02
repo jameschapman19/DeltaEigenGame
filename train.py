@@ -17,7 +17,7 @@ def get_arguments():
 
     # Experiment
     parser.add_argument(
-        "--model", type=str, default="utility", help="Model to train"
+        "--model", type=str, default="delta", help="Model to train"
     )
     parser.add_argument(
         "--data", type=str, default="mediamill", help="Data directory"
@@ -61,7 +61,6 @@ MODEL_DICT = {
         "delta": cca.DeltaEigenGame,
         "gha": cca.GHAGEP,
         "saa": CCA,
-        "utility": cca.Utility,
     },
     "pls": {
         "sgha": pls.SGHA,
@@ -70,7 +69,6 @@ MODEL_DICT = {
         "gha": pls.GHAGEP,
         "sp": pls.StochasticPower,
         "saa": PLS,
-        "utility": pls.Utility,
     },
 }
 

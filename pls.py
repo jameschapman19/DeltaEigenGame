@@ -53,12 +53,9 @@ class Tracker:
 
 
 class DeltaEigenGame(Tracker, PLSEigenGame):
-    pass
-
-class Utility(Tracker, PLSEigenGame):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads = 2 * Aw - (Aw @ wBw * np.sign(np.diag(wAw)) + Bw @ wAw)
+        grads=2 * Aw - (Aw @ np.triu(wBw) + Bw @ np.triu(wAw))
         return -grads
 
 class GHAGEP(Tracker, PLSGHAGEP):

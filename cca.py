@@ -29,10 +29,10 @@ class Tracker:
                         pcc = tcc / true['train']
                         wandb.log({"Train PCC": pcc}, step=i)
                     if val_views is not None:
-                        tcc= self.tcc(val_views)
+                        tcc = self.tcc(val_views)
                         wandb.log({"Val TCC": tcc}, step=i)
                         if true is not None:
-                            pcc=tcc / true['val']
+                            pcc = tcc / true['val']
                             wandb.log({"Val PCC": pcc}, step=i)
         return self
 
@@ -43,25 +43,22 @@ class Tracker:
 
 
 class DeltaEigenGame(Tracker, CCAEigenGame):
-    pass
-
-class Utility(Tracker, CCAEigenGame):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads = 2 * Aw - (Aw @ wBw * np.sign(np.diag(wAw)) + Bw @ wAw)
+        grads=2 * Aw - (Aw @ np.triu(wBw) + Bw @ np.triu(wAw))
         return -grads
 
 class GHAGEP(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads = 2*Aw - Bw @ np.triu(wAw)
+        grads = 2 * Aw - Bw @ np.triu(wAw)
         return -grads
 
 
 class SGHA(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads = 2 * Aw - 2*Bw @wAw
+        grads = 2 * Aw - 2 * Bw @ wAw
         return -grads
 
 
@@ -70,11 +67,11 @@ class GammaEigenGame(Tracker, CCAEigenGame):
         self.gamma = kwargs.pop('gamma', 1e-1)
         self.Bu = None
         super().__init__(**kwargs)
-        self.rho=1e-10
+        self.rho = 1e-10
 
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        check=np.diag(wAw)/np.diag(wBw)
+        check = np.diag(wAw) / np.diag(wBw)
         if self.Bu is None:
             self.Bu = u
         denominator = np.diag(u.T @ self.Bu)
@@ -89,5 +86,5 @@ class GammaEigenGame(Tracker, CCAEigenGame):
         return -grads
 
     def _gradient_step(self, weights, velocity):
-        weights= weights + velocity
-        return weights/np.linalg.norm(weights, axis=0, keepdims=True)
+        weights = weights + velocity
+        return weights / np.linalg.norm(weights, axis=0, keepdims=True)
