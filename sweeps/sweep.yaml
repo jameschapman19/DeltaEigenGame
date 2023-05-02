@@ -33,7 +33,10 @@ parameters:
       - 1
   seed:
     values:
-      - 0
+      - 1
+      - 2
+      - 3
+      - 4
   lr:
     values:
       - 0.01

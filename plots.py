@@ -55,11 +55,12 @@ def get_summary():
 
     return id_df, summary_df, config_df
 
-def get_best_runs(data='mnist',batch_size=100, objective='PCC', mode='Train'):
+def get_best_runs(data='mnist',batch_size=100, objective='PCC', mode='Train',momentum=0):
     id_df, summary_df, config_df = get_summary()
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df['data'] == data]
     summary_df = summary_df.loc[summary_df['batch_size'] == batch_size]
+    summary_df = summary_df.loc[summary_df['momentum'] == momentum]
     #sort summary_df by Train PCC or PVC
     summary_df = summary_df.sort_values(by=[f'{mode} {objective}'], ascending=False)
     summary_df=summary_df.groupby('model').head(1).reset_index(drop=True)
