@@ -1,0 +1,46 @@
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
+program: train.py
+project: DeltaEigenGame
+method: grid
+parameters:
+  objective:
+    values:
+      - cca
+      - pls
+  model:
+    values:
+      - gha
+  data:
+    values:
+      - mnist
+      - cifar
+      - mediamill
+  batch_size:
+    values:
+      - 100
+  components:
+    values:
+      - 4
+  epochs:
+    values:
+      - 1
+  seed:
+    values:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+  lr:
+    values:
+      - 0.01
+      - 0.001
+      - 0.0001
+  momentum:
+    values:
+      - 0.9
+      - 0
