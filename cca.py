@@ -43,10 +43,7 @@ class Tracker:
 
 
 class DeltaEigenGame(Tracker, CCAEigenGame):
-    def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads=2 * Aw - (Aw @ np.triu(wBw) + Bw @ np.triu(wAw))
-        return -grads
+    pass
 
 class GHAGEP(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):

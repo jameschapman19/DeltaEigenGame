@@ -16,7 +16,6 @@ parameters:
       - delta
       - gha
       - sgha
-      - utility
   data:
     values:
       - mnist
