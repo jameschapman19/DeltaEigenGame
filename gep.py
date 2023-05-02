@@ -2,7 +2,7 @@ import numpy as np
 
 
 class GEPSolver:
-    def __init__(self, learning_rate=1e-3, epochs=20000, components=1, method="eg", return_eigvals=True,
+    def __init__(self, learning_rate=1e-5, epochs=200000, components=1, method="eg", return_eigvals=True,
                  line_search=False,
                  momentum=0.):
         self.u = None
@@ -23,7 +23,8 @@ class GEPSolver:
         else:
             u = u.copy()
         self.velocity = np.zeros_like(u)
-        self.track = []
+        self.track = np.zeros((self.epochs, self.components))
+        self.subspace_track = np.zeros(self.epochs)
         for _ in range(self.epochs):
             u += self.momentum * self.velocity
             grads = self.grads(A, B, u)
@@ -31,12 +32,15 @@ class GEPSolver:
                 self.backtracking_line_search(A, B, u, grads)
             self.velocity = self.momentum * self.velocity - self.learning_rate * grads
             u += self.velocity
-            self.track.append(-self.objective(A, B, u))
+            self.track[_] = (-self.objective(A, B, u))
+            self.subspace_track[_] = 2 * np.trace(u.T @ A @ u) - np.trace(u.T @ A @ u@u.T @ B @ u)
         self.u = u
         if self.return_eigvals:
             uAu = u.T @ A @ u
             uBu = u.T @ B @ u
             vals = np.diag(uAu) / np.diag(uBu)
+            obj = self.objective(A, B, u)
+            grad = self.grads(A, B, u)
             self.eigenvalues = vals
         return self
 
@@ -46,8 +50,7 @@ class GEPSolver:
         wAw = u.T @ Aw
         wBw = u.T @ Bw
         if self.method == "delta":
-            grads = 4 * Aw - 2*(Aw @ np.triu(wBw, 1) + Bw @ np.triu(wAw, 1)) - 2*(Aw @ np.diag(np.diag(wBw)) + Bw @ np.diag(np.diag(wAw)))
-            grads2 =4 * Aw - 2*(Aw @ np.triu(wBw) + Bw @ np.triu(wAw))
+            grads = 2 * Aw - (Aw @ np.triu(wBw) + Bw @ np.triu(wAw))
         elif self.method == "deltaso":
             grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
         elif self.method == "ghaso":
@@ -66,7 +69,8 @@ class GEPSolver:
         Bw = B @ u
         wAw = u.T @ Aw
         wBw = u.T @ Bw
-        return -2 * np.trace(wAw) + np.trace(wAw @ wBw)
+        obj = -2 * np.diag(wAw) + 2*(wBw@np.triu(wAw,1)).sum(axis=0) + np.diag(wBw)@np.diag(wAw)
+        return obj
 
     def backtracking_line_search(self, A, B, u, grads):
         while self.objective(A, B, u - self.learning_rate * grads) > self.objective(A, B,
@@ -91,7 +95,7 @@ class GEPSolver:
 
 
 def main():
-    p = 40
+    p = 10
     # A random generalized eigenvalue problem with symetric matrices A and B where A is not positive definite
     A = np.random.rand(p, p)
     B = np.random.rand(p, p)
@@ -103,7 +107,8 @@ def main():
     # replace singular vals with 1
     U, S, Vt = np.linalg.svd(B)
     S = np.linspace(1, 1e-3, p)
-    B = np.eye(p)
+    B = U @ np.diag(S) @ U.T
+    #B=np.eye(p)
     momentum = 0
     components = 10
     u = np.random.rand(p, components)
@@ -132,14 +137,20 @@ def main():
 
     # plot the objective
     import matplotlib.pyplot as plt
-    plt.plot(delta.track, label="delta")
-    # plt.plot(deltaso.track, label="deltaso")
-    plt.plot(gha.track, label="gha")
-    # plt.plot(ghaso.track, label="ghaso")
-    plt.yscale("log")
-    plt.ylim(1e-10, 1e10)
-    plt.legend()
+    # each method has a track attribute that stores the objective value at each iteration for each component
+    # plot this with a label for each component in the legend
+    plt.plot(-delta.track)
+    #add labels for each component
+    plt.legend([i for i in range(components)])
+    plt.title("Objective")
     plt.show()
+    plt.plot(-gha.subspace_track, label="gha")
+    plt.plot(-delta.subspace_track, label="delta")
+    plt.legend()
+    plt.title("Subspace objective")
+    plt.show()
+
+
     print()
 
 
