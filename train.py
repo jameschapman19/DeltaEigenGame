@@ -1,7 +1,7 @@
 import argparse
 
 import numpy as np
-from cca_zoo.models import CCA, PLS
+from cca_zoo.models import rCCA, PLS
 from scipy.linalg import svdvals
 
 import cca
@@ -18,10 +18,10 @@ def get_arguments():
 
     # Experiment
     parser.add_argument(
-        "--model", type=str, default="gamma", help="Model to train"
+        "--model", type=str, default="delta", help="Model to train"
     )
     parser.add_argument(
-        "--data", type=str, default="mediamill", help="Data directory"
+        "--data", type=str, default="cifar", help="Data directory"
     )
     parser.add_argument(
         "--objective", type=str, default="cca", help="Objective function"
@@ -41,7 +41,7 @@ def get_arguments():
         "--epochs", type=int, default=1, help="Number of epochs"
     )
     parser.add_argument(
-        "--lr", type=float, default=1e-2, help="Learning rate"
+        "--lr", type=float, default=1e-3, help="Learning rate"
     )
     parser.add_argument(
         "--momentum", type=bool, default=0.5, help="Use Nesterov momentum"
@@ -61,7 +61,7 @@ MODEL_DICT = {
         "gamma": cca.GammaEigenGame,
         "delta": cca.DeltaEigenGame,
         "gha": cca.GHAGEP,
-        "saa": CCA,
+        "saa": rCCA,
     },
     "pls": {
         "sgha": pls.SGHA,
@@ -130,6 +130,7 @@ def main():
         model.fit([X, Y], val_views=[X_test, Y_test], true=true, log_every=log_every)
     else:
         model.fit([X, Y], true=true, log_every=log_every)
+    print()
 
 
 if __name__ == '__main__':

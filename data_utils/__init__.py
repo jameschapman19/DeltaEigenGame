@@ -29,8 +29,12 @@ def load_mnist():
     mnist = loadmat(PROJECT_DIR + "MNIST/mnist.mat")
     train = mnist['trainX']
     test = mnist['testX']
+    # add gaussian noise
+    train = train + np.random.normal(0, 10, train.shape)
+    test = test + np.random.normal(0, 10, test.shape)
     train_x = train[:, :392]
     train_y = train[:, 392:]
     test_x = test[:, :392]
     test_y = test[:, 392:]
+
     return train_x, train_y, test_x, test_y

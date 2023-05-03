@@ -10,7 +10,7 @@ from data_utils import load_cifar, load_mediamill, load_mnist
 
 os.makedirs('./results', exist_ok=True)
 
-for data in ['cifar','mnist','mediamill']:
+for data in ['mnist']:#,'cifar','mediamill']:
     if data == 'cifar':
         X, Y, X_test, Y_test = load_cifar()
     elif data == 'mnist':
@@ -20,9 +20,9 @@ for data in ['cifar','mnist','mediamill']:
     else:
         raise ValueError('Dataset not found')
 
-    from sklearn.preprocessing import StandardScaler
+    components = 4
 
-    components = 5
+    from sklearn.preprocessing import StandardScaler
 
     x_scaler = StandardScaler()
     y_scaler = StandardScaler()
@@ -32,7 +32,7 @@ for data in ['cifar','mnist','mediamill']:
         X_test = x_scaler.transform(X_test)
         Y_test = y_scaler.transform(Y_test)
 
-    cca = CCA(latent_dims=components, scale=True, centre=True).fit((X, Y))
+    cca = CCA(latent_dims=4, scale=False, centre=False).fit((X, Y))
     cca_score_train = cca.score((X, Y))
     np.save(f'./results/{data}_cca_score_train.npy', cca_score_train)
     if X_test is not None:
