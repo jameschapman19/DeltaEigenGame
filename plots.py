@@ -126,5 +126,5 @@ def plot_pvc(data='mnist', batch_size=100, momentum=0.9):
 
 for data in ['mediamill', 'mnist', 'cifar']:
     for batch_size in [100]:
-        plot_pcc(data=data, batch_size=batch_size, momentum=0)
         plot_pvc(data=data, batch_size=batch_size, momentum=0)
+        plot_pcc(data=data, batch_size=batch_size, momentum=0)

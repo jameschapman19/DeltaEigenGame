@@ -21,7 +21,7 @@ def get_arguments():
         "--model", type=str, default="delta", help="Model to train"
     )
     parser.add_argument(
-        "--data", type=str, default="cifar", help="Data directory"
+        "--data", type=str, default="mediamill", help="Data directory"
     )
     parser.add_argument(
         "--objective", type=str, default="pls", help="Objective function"

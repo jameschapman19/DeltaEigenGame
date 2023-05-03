@@ -12,7 +12,6 @@ class Tracker:
     def fit(self, views: Iterable[np.ndarray], y=None, val_views: Iterable[np.ndarray] = None, log_every=1,
             true=None):
         views = self._validate_inputs(views)
-        val_views = [self.scalers[i].transform(view) for i, view in enumerate(val_views)]
         self._check_params()
         train_dataloader, val_dataloader = self.get_dataloader(views)
         initializer = _default_initializer(
