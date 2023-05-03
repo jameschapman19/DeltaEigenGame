@@ -7,8 +7,14 @@ from cca_zoo.models._iterative._base import _default_initializer
 
 
 class Tracker:
-    def fit(self, views: Iterable[np.ndarray], y=None, val_views: Iterable[np.ndarray] = None, log_every=1,
-            true=None):
+    def fit(
+        self,
+        views: Iterable[np.ndarray],
+        y=None,
+        val_views: Iterable[np.ndarray] = None,
+        log_every=1,
+        true=None,
+    ):
         views = self._validate_inputs(views)
         self._check_params()
         train_dataloader, val_dataloader = self.get_dataloader(views)
@@ -17,6 +23,7 @@ class Tracker:
         )
         self.weights = initializer.fit(views).weights
         self.weights = [weights.astype(np.float32) for weights in self.weights]
+        self.weights = [weight / np.linalg.norm(view@weight, axis=0) for view, weight in zip(views, self.weights)]
         i = 0
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
@@ -24,26 +31,31 @@ class Tracker:
                 i += 1
                 if i % log_every == 0:
                     tcc = self.tcc(views)
-                    wandb.log({"Train TCC": tcc}, step=i*self.batch_size)
+                    wandb.log({"Train TCC": tcc}, step=i * self.batch_size)
                     if true is not None:
-                        pcc = tcc / true['train']
-                        wandb.log({"Train PCC": pcc}, step=i*self.batch_size)
+                        pcc = tcc / true["train"]
+                        wandb.log({"Train PCC": pcc}, step=i * self.batch_size)
                     if val_views is not None:
                         tcc = self.tcc(val_views)
-                        wandb.log({"Val TCC": tcc}, step=i*self.batch_size)
+                        wandb.log({"Val TCC": tcc}, step=i * self.batch_size)
                         if true is not None:
-                            pcc = tcc / true['val']
-                            wandb.log({"Val PCC": pcc}, step=i*self.batch_size)
+                            pcc = tcc / true["val"]
+                            wandb.log({"Val PCC": pcc}, step=i * self.batch_size)
         return self
 
     def tcc(self, views):
         z = self.transform(views)
-        tcc = MCCA(latent_dims=self.latent_dims, scale=False, centre=False).fit(z).score(z)
+        tcc = (
+            MCCA(latent_dims=self.latent_dims, scale=False, centre=False)
+            .fit(z)
+            .score(z)
+        )
         return tcc.sum()
 
 
 class DeltaEigenGame(Tracker, CCAEigenGame):
     pass
+
 
 class Subspace(Tracker, CCAEigenGame):
     def grads(self, views, u=None):
@@ -55,7 +67,7 @@ class Subspace(Tracker, CCAEigenGame):
 class GHAGEP(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads = 2 * Aw - 2*Bw @ np.triu(wAw)
+        grads = 2 * Aw - 2 * Bw @ np.triu(wAw)
         return -grads
 
 
@@ -68,7 +80,7 @@ class SGHA(Tracker, CCAGHAGEP):
 
 class GammaEigenGame(Tracker, CCAEigenGame):
     def __init__(self, **kwargs):
-        self.gamma = kwargs.pop('gamma', 1e-1)
+        self.gamma = kwargs.pop("gamma", 1e-1)
         self.Bu = None
         super().__init__(**kwargs)
         self.rho = 1e-10
@@ -84,7 +96,9 @@ class GammaEigenGame(Tracker, CCAEigenGame):
         By = self.Bu / denominator
         Ay, _, _, _ = self._get_terms(views, y)
         rewards = Aw * np.diag(wBw) - Bw * np.diag(wAw)
-        penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(np.tril(u.T @ By, -1) @ Ay.T @ u)
+        penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(
+            np.tril(u.T @ By, -1) @ Ay.T @ u
+        )
         self.Bu = self.Bu + self.gamma * (Bw - self.Bu)
         grads = rewards - penalties
         return -grads

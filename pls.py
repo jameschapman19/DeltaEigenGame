@@ -9,8 +9,14 @@ import wandb
 
 
 class Tracker:
-    def fit(self, views: Iterable[np.ndarray], y=None, val_views: Iterable[np.ndarray] = None, log_every=1,
-            true=None):
+    def fit(
+        self,
+        views: Iterable[np.ndarray],
+        y=None,
+        val_views: Iterable[np.ndarray] = None,
+        log_every=1,
+        true=None,
+    ):
         views = self._validate_inputs(views)
         self._check_params()
         train_dataloader, val_dataloader = self.get_dataloader(views)
@@ -27,21 +33,23 @@ class Tracker:
                 if i % log_every == 0:
                     u = [self.qr_weights(w) for w in self.weights]
                     tvc = self.tvc(views, u=u)
-                    wandb.log({"Train TVC": tvc}, step=i*self.batch_size)
+                    wandb.log({"Train TVC": tvc}, step=i * self.batch_size)
                     if true is not None:
-                        pvc = tvc / true['train']
-                        wandb.log({"Train PVC": pvc}, step=i*self.batch_size)
+                        pvc = tvc / true["train"]
+                        wandb.log({"Train PVC": pvc}, step=i * self.batch_size)
                     if val_views is not None:
                         tvc = self.tvc(val_views, u=u)
-                        wandb.log({"Val TVC": tvc}, step=i*self.batch_size)
+                        wandb.log({"Val TVC": tvc}, step=i * self.batch_size)
                         if true is not None:
-                            pvc = tvc / true['val']
-                            wandb.log({"Val PVC": pvc}, step=i*self.batch_size)
+                            pvc = tvc / true["val"]
+                            wandb.log({"Val PVC": pvc}, step=i * self.batch_size)
         return self
 
     def tvc(self, views, u):
         z = [view @ w for view, w in zip(views, u)]
-        s = scipy.linalg.svdvals(np.cov(*z, rowvar=False)[0:self.latent_dims, self.latent_dims:])
+        s = scipy.linalg.svdvals(
+            np.cov(*z, rowvar=False)[0 : self.latent_dims, self.latent_dims :]
+        )
         return s.sum()
 
     @staticmethod
@@ -61,24 +69,25 @@ class Subspace(Tracker, PLSEigenGame):
         grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
         return -grads
 
+
 class GHAGEP(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads = 2*Aw - Bw @ np.triu(wAw)
+        grads = 2 * Aw - Bw @ np.triu(wAw)
         return -grads
 
 
 class StochasticPower(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        return -2*Aw
+        return -2 * Aw
 
     def _gradient_step(self, weights, velocity):
         weights = weights + velocity
         # QR decomposition to orthogonalize weights
-        Q,R=np.linalg.qr(weights)
+        Q, R = np.linalg.qr(weights)
         # SVD decomposition to get the sign of the weights
-        U,_,V=np.linalg.svd(R)
+        U, _, V = np.linalg.svd(R)
         S = np.sign(np.sign(np.diag(U)) + 0.5)
         weights = Q @ np.diag(S)
         return weights
@@ -92,7 +101,7 @@ class SGHA(Tracker, PLSGHAGEP):
 
 class GammaEigenGame(Tracker, PLSEigenGame):
     def __init__(self, **kwargs):
-        self.gamma = kwargs.pop('gamma', 1e-1)
+        self.gamma = kwargs.pop("gamma", 1e-1)
         self.BU = None
         super().__init__(**kwargs)
         self.rho = 1e-10
@@ -107,7 +116,9 @@ class GammaEigenGame(Tracker, PLSEigenGame):
         By = self.BU / denominator
         Ay, _, _, _ = self._get_terms(views, y)
         rewards = Aw * np.diag(wBw) - Bw * np.diag(wAw)
-        penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(np.tril(u.T @ By, -1) @ Ay.T @ u)
+        penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(
+            np.tril(u.T @ By, -1) @ Ay.T @ u
+        )
         self.BU = self.BU + self.gamma * (Bw - self.BU)
         grads = rewards - penalties
         return -grads

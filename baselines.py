@@ -8,17 +8,17 @@ from cca_zoo.models import CCA, PLS
 
 from data_utils import load_cifar, load_mediamill, load_mnist
 
-os.makedirs('./results', exist_ok=True)
+os.makedirs("./results", exist_ok=True)
 
-for data in ['mnist']:#,'cifar','mediamill']:
-    if data == 'cifar':
+for data in ["mnist"]:  # ,'cifar','mediamill']:
+    if data == "cifar":
         X, Y, X_test, Y_test = load_cifar()
-    elif data == 'mnist':
+    elif data == "mnist":
         X, Y, X_test, Y_test = load_mnist()
-    elif data == 'mediamill':
+    elif data == "mediamill":
         X, Y, X_test, Y_test = load_mediamill()
     else:
-        raise ValueError('Dataset not found')
+        raise ValueError("Dataset not found")
 
     components = 4
 
@@ -34,16 +34,16 @@ for data in ['mnist']:#,'cifar','mediamill']:
 
     cca = CCA(latent_dims=4, scale=False, centre=False).fit((X, Y))
     cca_score_train = cca.score((X, Y))
-    np.save(f'./results/{data}_cca_score_train.npy', cca_score_train)
+    np.save(f"./results/{data}_cca_score_train.npy", cca_score_train)
     if X_test is not None:
         cca_score_test = cca.score((X_test, Y_test))
-        np.save(f'./results/{data}_cca_score_test.npy', cca_score_test)
+        np.save(f"./results/{data}_cca_score_test.npy", cca_score_test)
 
     pls = PLS(latent_dims=components, scale=False, centre=False).fit((X, Y))
     z = pls.transform((X, Y))
     pls_score_train = np.diag(np.cov(z[0].T, z[1].T)[:components, components:])
-    np.save(f'./results/{data}_pls_score_train.npy', pls_score_train)
+    np.save(f"./results/{data}_pls_score_train.npy", pls_score_train)
     if X_test is not None:
         z = pls.transform((X_test, Y_test))
         pls_score_test = np.diag(np.cov(z[0].T, z[1].T)[:components, components:])
-        np.save(f'./results/{data}_pls_score_test.npy', pls_score_test)
+        np.save(f"./results/{data}_pls_score_test.npy", pls_score_test)

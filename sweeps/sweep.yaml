@@ -37,7 +37,7 @@ parameters:
       - 2
       - 3
       - 4
-      - 5cd
+      - 5
   lr:
     values:
         - 0.01

@@ -2,9 +2,16 @@ import numpy as np
 
 
 class GEPSolver:
-    def __init__(self, learning_rate=1e-5, epochs=200000, components=1, method="eg", return_eigvals=True,
-                 line_search=False,
-                 momentum=0.):
+    def __init__(
+        self,
+        learning_rate=1e-5,
+        epochs=200000,
+        components=1,
+        method="eg",
+        return_eigvals=True,
+        line_search=False,
+        momentum=0.0,
+    ):
         self.u = None
         self.learning_rate = learning_rate
         self.epochs = epochs
@@ -32,8 +39,10 @@ class GEPSolver:
                 self.backtracking_line_search(A, B, u, grads)
             self.velocity = self.momentum * self.velocity - self.learning_rate * grads
             u += self.velocity
-            self.track[_] = (-self.objective(A, B, u))
-            self.subspace_track[_] = 2 * np.trace(u.T @ A @ u) - np.trace(u.T @ A @ u@u.T @ B @ u)
+            self.track[_] = -self.objective(A, B, u)
+            self.subspace_track[_] = 2 * np.trace(u.T @ A @ u) - np.trace(
+                u.T @ A @ u @ u.T @ B @ u
+            )
         self.u = u
         if self.return_eigvals:
             uAu = u.T @ A @ u
@@ -69,13 +78,19 @@ class GEPSolver:
         Bw = B @ u
         wAw = u.T @ Aw
         wBw = u.T @ Bw
-        obj = -2 * np.diag(wAw) + 2*(wBw@np.triu(wAw,1)).sum(axis=0) + np.diag(wBw)@np.diag(wAw)
+        obj = (
+            -2 * np.diag(wAw)
+            + 2 * (wBw @ np.triu(wAw, 1)).sum(axis=0)
+            + np.diag(wBw) @ np.diag(wAw)
+        )
         return obj
 
     def backtracking_line_search(self, A, B, u, grads):
-        while self.objective(A, B, u - self.learning_rate * grads) > self.objective(A, B,
-                                                                                    u) - self.rho * self.learning_rate * np.linalg.norm(
-            grads) ** 2:
+        while (
+            self.objective(A, B, u - self.learning_rate * grads)
+            > self.objective(A, B, u)
+            - self.rho * self.learning_rate * np.linalg.norm(grads) ** 2
+        ):
             self.learning_rate *= 0.9
         return
 
@@ -89,7 +104,9 @@ class GEPSolver:
         rewards = Aw * np.diag(wBw) - Bw * np.diag(wAw)
         Ay = A @ y
         By = B @ y
-        penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(np.tril(u.T @ By, -1) @ Ay.T @ u)
+        penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(
+            np.tril(u.T @ By, -1) @ Ay.T @ u
+        )
         grads = rewards - penalties
         return grads
 
@@ -108,13 +125,14 @@ def main():
     U, S, Vt = np.linalg.svd(B)
     S = np.linspace(1, 1e-3, p)
     B = U @ np.diag(S) @ U.T
-    #B=np.eye(p)
+    # B=np.eye(p)
     momentum = 0
     components = 10
     u = np.random.rand(p, components)
     # u /= np.sqrt(np.diag(u.T @ B @ u))
 
     from scipy.linalg import eigh
+
     # get largest eigenvalue and eigenvector
     w, u_ = eigh(A, B)
     v_true = np.diag(u_.T @ A @ u_)
@@ -122,10 +140,14 @@ def main():
     idx = np.argsort(v_true)[::-1]
     v_true = v_true[idx[:components]]
     # Delta versions
-    delta = GEPSolver(method="delta", momentum=momentum, components=components).fit(A, B, u=u)
+    delta = GEPSolver(method="delta", momentum=momentum, components=components).fit(
+        A, B, u=u
+    )
     # deltaso = GEPSolver(method="deltaso", momentum=momentum, components=components).fit(A, B, u=u)
     # GHAGEP versions
-    gha = GEPSolver(method="gha", momentum=momentum, components=components).fit(A, B, u=u)
+    gha = GEPSolver(method="gha", momentum=momentum, components=components).fit(
+        A, B, u=u
+    )
     # ghaso = GEPSolver(method="ghaso", momentum=momentum, components=components).fit(A, B, u=u)
 
     # print eigenvalues
@@ -137,10 +159,11 @@ def main():
 
     # plot the objective
     import matplotlib.pyplot as plt
+
     # each method has a track attribute that stores the objective value at each iteration for each component
     # plot this with a label for each component in the legend
     plt.plot(-delta.track)
-    #add labels for each component
+    # add labels for each component
     plt.legend([i for i in range(components)])
     plt.title("Objective")
     plt.show()
@@ -150,9 +173,8 @@ def main():
     plt.title("Subspace objective")
     plt.show()
 
-
     print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

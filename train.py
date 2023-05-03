@@ -17,40 +17,26 @@ def get_arguments():
     )
 
     # Experiment
+    parser.add_argument("--model", type=str, default="delta", help="Model to train")
+    parser.add_argument("--data", type=str, default="cifar", help="Data directory")
     parser.add_argument(
-        "--model", type=str, default="delta", help="Model to train"
+        "--objective", type=str, default="cca", help="Objective function"
     )
-    parser.add_argument(
-        "--data", type=str, default="mediamill", help="Data directory"
-    )
-    parser.add_argument(
-        "--objective", type=str, default="pls", help="Objective function"
-    )
-    parser.add_argument(
-        "--seed", type=int, default=0, help="Random seed"
-    )
+    parser.add_argument("--seed", type=int, default=1, help="Random seed")
     parser.add_argument(
         "--components", type=int, default=4, help="Number of components"
     )
 
     # Parameters
+    parser.add_argument("--batch_size", type=int, default=100, help="Batch size")
+    parser.add_argument("--epochs", type=int, default=1, help="Number of epochs")
+    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument(
-        "--batch_size", type=int, default=100, help="Batch size"
-    )
-    parser.add_argument(
-        "--epochs", type=int, default=1, help="Number of epochs"
-    )
-    parser.add_argument(
-        "--lr", type=float, default=1e-3, help="Learning rate"
-    )
-    parser.add_argument(
-        "--momentum", type=bool, default=0.5, help="Use Nesterov momentum"
+        "--momentum", type=bool, default=0, help="Use Nesterov momentum"
     )
 
     # GammaEigenGame
-    parser.add_argument(
-        "--gamma", type=float, default=0.9, help="Gamma"
-    )
+    parser.add_argument("--gamma", type=float, default=0.9, help="Gamma")
 
     return parser
 
@@ -78,7 +64,7 @@ MODEL_DICT = {
 
 def tvc(weights, views):
     z = [view @ weight for view, weight in zip(views, weights)]
-    m = z[0].T @ z[1] / (z[0].shape[0]-1)
+    m = z[0].T @ z[1] / (z[0].shape[0] - 1)
     return np.diag(m)
 
 
@@ -112,6 +98,7 @@ def main():
         raise NotImplementedError
 
     from sklearn.preprocessing import StandardScaler
+
     x_scaler = StandardScaler()
     y_scaler = StandardScaler()
     X = x_scaler.fit_transform(X)
@@ -121,13 +108,23 @@ def main():
         Y_test = y_scaler.transform(Y_test)
 
     if wandb.config.data == "synthetic":
-        true = {"train": svdvals(X.T@Y)[:5].sum(), "val": tvc([np.eye(10), np.eye(10)], [X_test, Y_test]).sum()}
+        true = {
+            "train": svdvals(X.T @ Y)[:5].sum(),
+            "val": tvc([np.eye(10), np.eye(10)], [X_test, Y_test]).sum(),
+        }
     else:
-        true = {"train": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy')[:wandb.config.components].sum(), "val": np.load(f'./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy')[:wandb.config.components].sum()}
+        true = {
+            "train": np.load(
+                f"./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy"
+            )[: wandb.config.components].sum(),
+            "val": np.load(
+                f"./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy"
+            )[: wandb.config.components].sum(),
+        }
     # log every 5% of an epoch for a given dataset and batch size
     # log_every = int((X.shape[0] / 20))
     # round down X.shape[0] to the nearest 100
-    log_every = int((X.shape[0] // 100)/20)
+    log_every = int((X.shape[0] // 100) / 20)
     if X_test is not None:
         model.fit([X, Y], val_views=[X_test, Y_test], true=true, log_every=log_every)
     else:
@@ -135,12 +132,12 @@ def main():
     print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "Train Models with Delta-EigenGame", parents=[get_arguments()]
     )
     args = parser.parse_args()
     args = vars(args)
-    wandb.init(config=args, mode='online')
+    wandb.init(config=args, mode="online")
     main()
     wandb.finish()
