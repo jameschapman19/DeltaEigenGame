@@ -1,8 +1,11 @@
 import numpy as np
 from scipy.io import loadmat
+import os
 
-PROJECT_DIR = "C:/Users/chapm/PycharmProjects/DeltaEigenGame/data/"
-CLUSTER_DIR = "/cluster/project9/CCA_public/data/"
+if os.path.exists("/cluster/project9/CCA_public/data/"):
+    PROJECT_DIR = "/cluster/project9/CCA_public/data/"
+else:
+    PROJECT_DIR = "C:/Users/chapm/PycharmProjects/DeltaEigenGame/data/"
 
 
 def load_cifar():
