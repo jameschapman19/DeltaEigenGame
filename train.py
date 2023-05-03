@@ -17,13 +17,13 @@ def get_arguments():
 
     # Experiment
     parser.add_argument(
-        "--model", type=str, default="gha", help="Model to train"
+        "--model", type=str, default="sp", help="Model to train"
     )
     parser.add_argument(
-        "--data", type=str, default="mnist", help="Data directory"
+        "--data", type=str, default="mediamill", help="Data directory"
     )
     parser.add_argument(
-        "--objective", type=str, default="cca", help="Objective function"
+        "--objective", type=str, default="pls", help="Objective function"
     )
     parser.add_argument(
         "--seed", type=int, default=0, help="Random seed"
@@ -40,10 +40,10 @@ def get_arguments():
         "--epochs", type=int, default=1, help="Number of epochs"
     )
     parser.add_argument(
-        "--lr", type=float, default=1e-3, help="Learning rate"
+        "--lr", type=float, default=1e-2, help="Learning rate"
     )
     parser.add_argument(
-        "--momentum", type=bool, default=0.9, help="Use Nesterov momentum"
+        "--momentum", type=bool, default=0, help="Use Nesterov momentum"
     )
 
     # GammaEigenGame

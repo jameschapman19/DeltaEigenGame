@@ -65,11 +65,17 @@ class GHAGEP(Tracker, PLSGHAGEP):
 class StochasticPower(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        return Aw
+        return -2*Aw
 
     def _gradient_step(self, weights, velocity):
         weights = weights + velocity
-        return weights / np.linalg.norm(weights, axis=0, keepdims=True)
+        # QR decomposition to orthogonalize weights
+        Q,R=np.linalg.qr(weights)
+        # SVD decomposition to get the sign of the weights
+        U,_,V=np.linalg.svd(R)
+        S = np.sign(np.sign(np.diag(U)) + 0.5)
+        weights = Q @ np.diag(S)
+        return weights
 
 
 class SGHA(Tracker, PLSGHAGEP):
