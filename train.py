@@ -24,7 +24,7 @@ def get_arguments():
         "--data", type=str, default="cifar", help="Data directory"
     )
     parser.add_argument(
-        "--objective", type=str, default="cca", help="Objective function"
+        "--objective", type=str, default="pls", help="Objective function"
     )
     parser.add_argument(
         "--seed", type=int, default=0, help="Random seed"
@@ -62,6 +62,7 @@ MODEL_DICT = {
         "delta": cca.DeltaEigenGame,
         "gha": cca.GHAGEP,
         "saa": rCCA,
+        "subspace": cca.Subspace,
     },
     "pls": {
         "sgha": pls.SGHA,
@@ -70,6 +71,7 @@ MODEL_DICT = {
         "gha": pls.GHAGEP,
         "sp": pls.StochasticPower,
         "saa": PLS,
+        "subspace": pls.Subspace,
     },
 }
 

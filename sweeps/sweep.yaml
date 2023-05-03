@@ -17,6 +17,7 @@ parameters:
       - gha
       - sgha
       - gamma
+      - subspace
   data:
     values:
       - mnist
@@ -37,7 +38,7 @@ parameters:
       - 2
       - 3
       - 4
-      - 5
+      - 5cd
   lr:
     values:
         - 0.01
