@@ -9,6 +9,7 @@ method: grid
 parameters:
   objective:
     values:
+      - cca
       - pls
   model:
     values:
