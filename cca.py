@@ -21,19 +21,19 @@ class Tracker:
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
                 self._update(sample["views"])
-                i += self.batch_size
+                i += 1
                 if i % log_every == 0:
                     tcc = self.tcc(views)
-                    wandb.log({"Train TCC": tcc}, step=i)
+                    wandb.log({"Train TCC": tcc}, step=i*self.batch_size)
                     if true is not None:
                         pcc = tcc / true['train']
-                        wandb.log({"Train PCC": pcc}, step=i)
+                        wandb.log({"Train PCC": pcc}, step=i*self.batch_size)
                     if val_views is not None:
                         tcc = self.tcc(val_views)
-                        wandb.log({"Val TCC": tcc}, step=i)
+                        wandb.log({"Val TCC": tcc}, step=i*self.batch_size)
                         if true is not None:
                             pcc = tcc / true['val']
-                            wandb.log({"Val PCC": pcc}, step=i)
+                            wandb.log({"Val PCC": pcc}, step=i*self.batch_size)
         return self
 
     def tcc(self, views):

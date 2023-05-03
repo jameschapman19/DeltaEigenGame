@@ -24,20 +24,20 @@ class Tracker:
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
                 self._update(sample["views"])
-                i += self.batch_size
+                i += 1
                 if i % log_every == 0:
                     u = [self.qr_weights(w) for w in self.weights]
                     tvc = self.tvc(views, u=u)
-                    wandb.log({"Train TVC": tvc}, step=i)
+                    wandb.log({"Train TVC": tvc}, step=i*self.batch_size)
                     if true is not None:
                         pvc = tvc / true['train']
-                        wandb.log({"Train PVC": pvc}, step=i)
+                        wandb.log({"Train PVC": pvc}, step=i*self.batch_size)
                     if val_views is not None:
                         tvc = self.tvc(val_views, u=u)
-                        wandb.log({"Val TVC": tvc}, step=i)
+                        wandb.log({"Val TVC": tvc}, step=i*self.batch_size)
                         if true is not None:
                             pvc = tvc / true['val']
-                            wandb.log({"Val PVC": pvc}, step=i)
+                            wandb.log({"Val PVC": pvc}, step=i*self.batch_size)
         return self
 
     def tvc(self, views, u):

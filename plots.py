@@ -12,6 +12,15 @@ sns.set_context("paper", font_scale=1.5)
 
 PROJECT = 'DeltaEigenGame'
 
+MODEL_TO_TITLE = {'gha': r'GHA',
+                  'delta': r'$\delta$' + '-EigenGame',
+                  'gamma': r'$\gamma$' + '-EigenGame',
+                  'sgha': 'SGHA',
+                  'sp': 'Stochastic Power'}
+
+# Set order of models in plots
+ORDER = [r'$\delta$' + '-EigenGame', r'GHA', r'$\gamma$' + '-EigenGame', 'SGHA', 'Stochastic Power']
+
 
 def get_run_data(ids=None):
     api = wandb.Api(timeout=20)
@@ -74,18 +83,23 @@ def get_best_runs(data='mnist', batch_size=100, objective='PCC', mode='Train', m
     # get run data for models in summary_df matching best_df
     summary_df=pd.merge(best_df,summary_df,on=['model','lr', 'momentum'],how='left')
     df = get_run_data(ids=summary_df["id"].tolist())
+    # Change column title _step to samples seen
+    df = df.rename(columns={'_step': 'Samples Seen'})
     return df
 
 
 def plot_pcc(data='mnist', batch_size=100, momentum=0.9):
     # Plot PCC for best runs for each model
     df = get_best_runs(data=data, batch_size=batch_size, objective='PCC', mode='Train', momentum=momentum)
+    # map model names to titles
+    df['model'] = df['model'].map(MODEL_TO_TITLE)
     plt.figure()
     sns.lineplot(
         data=df,
-        x="_step",
+        x="Samples Seen",
         y="Train PCC",
         hue="model",
+        hue_order=ORDER
     )
     plt.title(f'{data} PCC')
     plt.savefig(f'plots/{data}_{batch_size}_pcc.png')
@@ -95,12 +109,15 @@ def plot_pcc(data='mnist', batch_size=100, momentum=0.9):
 def plot_pvc(data='mnist', batch_size=100, momentum=0.9):
     # Plot PVC for best runs for each model
     df = get_best_runs(data=data, batch_size=batch_size, objective='PVC', mode='Train', momentum=momentum)
+    # map model names to titles
+    df['model'] = df['model'].map(MODEL_TO_TITLE)
     plt.figure()
     sns.lineplot(
         data=df,
-        x="_step",
+        x="Samples Seen",
         y="Train PVC",
         hue="model",
+        hue_order=ORDER
     )
     plt.title(f'{data} PVC')
     plt.savefig(f'plots/{data}_{batch_size}_pvc.png')
