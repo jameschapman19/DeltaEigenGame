@@ -23,7 +23,10 @@ class Tracker:
         )
         self.weights = initializer.fit(views).weights
         self.weights = [weights.astype(np.float32) for weights in self.weights]
-        self.weights = [weight / np.linalg.norm(view@weight, axis=0) for view, weight in zip(views, self.weights)]
+        self.weights = [
+            weight / np.linalg.norm(view @ weight, axis=0)
+            for view, weight in zip(views, self.weights)
+        ]
         i = 0
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):

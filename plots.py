@@ -90,8 +90,12 @@ def get_best_runs(
         summary_df = summary_df.loc[summary_df["objective"] == "pls"]
     # get average over random seeds
     best_df = (
-        summary_df.fillna(np.inf).groupby(["model", "lr", "momentum"])[f"{mode} {objective}"]
-        .mean().replace(np.inf, np.nan).dropna().reset_index()
+        summary_df.fillna(np.inf)
+        .groupby(["model", "lr", "momentum"])[f"{mode} {objective}"]
+        .mean()
+        .replace(np.inf, np.nan)
+        .dropna()
+        .reset_index()
     )
     # summary_df = summary_df.loc[summary_df['momentum'] == momentum]
     # sort summary_df by Train PCC or PVC
@@ -119,7 +123,13 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0.9):
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     plt.figure()
-    sns.lineplot(data=df, x="Samples Seen", y="Train PCC", hue="model", hue_order=ORDER[:-1], )
+    sns.lineplot(
+        data=df,
+        x="Samples Seen",
+        y="Train PCC",
+        hue="model",
+        hue_order=ORDER[:-1],
+    )
     plt.title(f"{data} PCC")
     plt.savefig(f"plots/{data}_{batch_size}_pcc_{momentum}.png")
     plt.show()
