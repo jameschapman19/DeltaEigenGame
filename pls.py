@@ -97,7 +97,7 @@ class StochasticPower(Tracker, PLSGHAGEP):
 class SGHA(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
-        return Bw @ wAw - Aw
+        return -2*Aw + Bw @ wAw
 
 
 class GammaEigenGame(Tracker, PLSEigenGame):

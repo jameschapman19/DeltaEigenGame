@@ -14,7 +14,7 @@ sns.set_context("paper", font_scale=1.5)
 PROJECT = "DeltaEigenGame"
 
 MODEL_TO_TITLE = {
-    "delta": r"kGEP-GD",
+    "delta": r"k-GEP-GD",
     "subspace": r"GEP-GD",
     "gha": r"GHA",
     "sgha": "SGHA",
@@ -24,7 +24,7 @@ MODEL_TO_TITLE = {
 
 # Set order of models in plots
 ORDER = [
-    "kGEP-GD",
+    "k-GEP-GD",
     "GEP-GD",
     "GHA",
     "SGHA",
@@ -77,13 +77,15 @@ def get_summary():
 
 
 def get_best_runs(
-    data="mnist", batch_size=100, objective="PCC", mode="Train", momentum=0.9
+        data="mnist", batch_size=100, objective="PCC", mode="Train", momentum=0.9, lr=None
 ):
     id_df, summary_df, config_df = get_summary()
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df["data"] == data]
     summary_df = summary_df.loc[summary_df["batch_size"] == batch_size]
     summary_df = summary_df.loc[summary_df["momentum"] == momentum]
+    if lr is not None:
+        summary_df = summary_df.loc[summary_df["lr"] == lr]
     if objective == "PCC":
         summary_df = summary_df.loc[summary_df["objective"] == "cca"]
     elif objective == "PVC":
@@ -111,7 +113,7 @@ def get_best_runs(
     return df
 
 
-def plot_pcc(data="mnist", batch_size=100, momentum=0.9):
+def plot_pcc(data="mnist", batch_size=100, momentum=0.9, lr=None):
     # Plot PCC for best runs for each model
     df = get_best_runs(
         data=data,
@@ -119,6 +121,7 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0.9):
         objective="PCC",
         mode="Train",
         momentum=momentum,
+        lr=lr,
     )
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
@@ -131,11 +134,13 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0.9):
         hue_order=ORDER,
     )
     plt.title(f"{data} PCC")
-    plt.savefig(f"plots/{data}_{batch_size}_pcc_{momentum}.png")
+    if lr is None:
+        lr = "tuned"
+    plt.savefig(f"plots/{data}_{batch_size}_pcc_lr_{lr}.png")
     plt.show()
 
 
-def plot_pvc(data="mnist", batch_size=100, momentum=0.9):
+def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
     # Plot PVC for best runs for each model
     df = get_best_runs(
         data=data,
@@ -143,31 +148,22 @@ def plot_pvc(data="mnist", batch_size=100, momentum=0.9):
         objective="PVC",
         mode="Train",
         momentum=momentum,
+        lr=lr,
     )
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     plt.figure()
     sns.lineplot(data=df, x="Samples Seen", y="Train PVC", hue="model", hue_order=ORDER)
     plt.title(f"{data} PVC")
-    plt.savefig(f"plots/{data}_{batch_size}_pvc_{momentum}.png")
+    if lr is None:
+        lr = "tuned"
+    plt.savefig(f"plots/{data}_{batch_size}_pvc_lr_{lr}.png")
     plt.show()
 
 
-for data in ["cifar","mnist", "mediamill"]:
+for data in ["mnist", "cifar", "mediamill"]:
     for batch_size in [100]:
-        try:
-            plot_pvc(data=data, batch_size=batch_size, momentum=0.5)
-        except:
-            pass
-        try:
-            plot_pcc(data=data, batch_size=batch_size, momentum=0.5)
-        except:
-            pass
-        try:
-            plot_pvc(data=data, batch_size=batch_size, momentum=0)
-        except:
-            pass
-        try:
-            plot_pcc(data=data, batch_size=batch_size, momentum=0)
-        except:
-            pass
+        plot_pvc(data=data, batch_size=batch_size, momentum=0.5, lr=0.001)
+        plot_pcc(data=data, batch_size=batch_size, momentum=0.5, lr=0.001)
+        plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=0.001)
+        plot_pcc(data=data, batch_size=batch_size, momentum=0, lr=0.001)
