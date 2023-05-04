@@ -73,7 +73,7 @@ class GHAGEP(Tracker, CCAGHAGEP):
 class SGHA(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
-        grads = Aw - Bw @ wAw
+        grads = 2*Aw - 2*Bw @ wAw
         return -grads
 
 
