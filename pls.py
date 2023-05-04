@@ -73,7 +73,7 @@ class Subspace(Tracker, PLSEigenGame):
 
 class GHAGEP(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         grads = 2 * Aw - Bw @ np.triu(wAw)
         return -grads
 
@@ -96,7 +96,7 @@ class StochasticPower(Tracker, PLSGHAGEP):
 
 class SGHA(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         return Bw @ wAw - Aw
 
 
