@@ -22,7 +22,7 @@ class Tracker:
             views, self.initialization, self.random_state, self.latent_dims
         )
         self.weights = initializer.fit(views).weights
-        self.weights = [weights.astype(np.float32)/2 for weights in self.weights]
+        self.weights = [weights.astype(np.float32)/4 for weights in self.weights]
         i = 0
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
