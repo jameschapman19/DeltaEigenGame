@@ -128,7 +128,7 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0.9):
         x="Samples Seen",
         y="Train PCC",
         hue="model",
-        hue_order=ORDER[:-1],
+        hue_order=ORDER,
     )
     plt.title(f"{data} PCC")
     plt.savefig(f"plots/{data}_{batch_size}_pcc_{momentum}.png")
@@ -153,7 +153,21 @@ def plot_pvc(data="mnist", batch_size=100, momentum=0.9):
     plt.show()
 
 
-for data in ["mediamill", "mnist", "cifar"]:
+for data in ["cifar","mnist", "mediamill"]:
     for batch_size in [100]:
-        # plot_pvc(data=data, batch_size=batch_size, momentum=0)
-        plot_pcc(data=data, batch_size=batch_size, momentum=0)
+        try:
+            plot_pvc(data=data, batch_size=batch_size, momentum=0.5)
+        except:
+            pass
+        try:
+            plot_pcc(data=data, batch_size=batch_size, momentum=0.5)
+        except:
+            pass
+        try:
+            plot_pvc(data=data, batch_size=batch_size, momentum=0)
+        except:
+            pass
+        try:
+            plot_pcc(data=data, batch_size=batch_size, momentum=0)
+        except:
+            pass

@@ -40,9 +40,6 @@ class GEPSolver:
             self.velocity = self.momentum * self.velocity - self.learning_rate * grads
             u += self.velocity
             self.track[_] = -self.objective(A, B, u)
-            self.subspace_track[_] = 2 * np.trace(u.T @ A @ u) - np.trace(
-                u.T @ A @ u @ u.T @ B @ u
-            )
         self.u = u
         if self.return_eigvals:
             uAu = u.T @ A @ u
@@ -79,9 +76,7 @@ class GEPSolver:
         wAw = u.T @ Aw
         wBw = u.T @ Bw
         obj = (
-            -2 * np.diag(wAw)
-            + 2 * (wBw @ np.triu(wAw, 1)).sum(axis=0)
-            + np.diag(wBw) @ np.diag(wAw)
+            -2 * np.trace(2*wAw-wAw@wBw)
         )
         return obj
 
@@ -143,6 +138,9 @@ def main():
     delta = GEPSolver(method="delta", momentum=momentum, components=components).fit(
         A, B, u=u
     )
+    delta_line = GEPSolver(
+        method="delta", momentum=momentum, components=components, line_search=True, learning_rate=1
+    ).fit(A, B, u=u)
     # deltaso = GEPSolver(method="deltaso", momentum=momentum, components=components).fit(A, B, u=u)
     # GHAGEP versions
     gha = GEPSolver(method="gha", momentum=momentum, components=components).fit(
@@ -167,8 +165,7 @@ def main():
     plt.legend([i for i in range(components)])
     plt.title("Objective")
     plt.show()
-    plt.plot(-gha.subspace_track, label="gha")
-    plt.plot(-delta.subspace_track, label="delta")
+    plt.plot(-delta_line.subspace_track, label="deltals")
     plt.legend()
     plt.title("Subspace objective")
     plt.show()

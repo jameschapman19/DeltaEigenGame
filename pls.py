@@ -25,6 +25,7 @@ class Tracker:
         )
         self.weights = initializer.fit(views).weights
         self.weights = [weights.astype(np.float32) for weights in self.weights]
+        self.weights = [weight/(2*np.linalg.norm(weight)) for weight in self.weights]
         i = 0
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
@@ -65,7 +66,7 @@ class DeltaEigenGame(Tracker, PLSEigenGame):
 
 class Subspace(Tracker, PLSEigenGame):
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
         return -grads
 
@@ -107,7 +108,7 @@ class GammaEigenGame(Tracker, PLSEigenGame):
         self.rho = 1e-10
 
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         if self.BU is None:
             self.BU = Bw
         denominator = np.diag(u.T @ self.BU)

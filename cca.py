@@ -22,11 +22,7 @@ class Tracker:
             views, self.initialization, self.random_state, self.latent_dims
         )
         self.weights = initializer.fit(views).weights
-        self.weights = [weights.astype(np.float32) for weights in self.weights]
-        self.weights = [
-            weight / np.linalg.norm(view @ weight, axis=0)
-            for view, weight in zip(views, self.weights)
-        ]
+        self.weights = [weights.astype(np.float32)/2 for weights in self.weights]
         i = 0
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
@@ -62,22 +58,22 @@ class DeltaEigenGame(Tracker, CCAEigenGame):
 
 class Subspace(Tracker, CCAEigenGame):
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
         return -grads
 
 
 class GHAGEP(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads = 2 * Aw - 2 * Bw @ np.triu(wAw)
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
+        grads = Aw - Bw @ np.triu(wAw)
         return -grads
 
 
 class SGHA(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
-        grads = 2 * Aw - 2 * Bw @ wAw
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
+        grads = Aw - Bw @ wAw
         return -grads
 
 
@@ -89,7 +85,7 @@ class GammaEigenGame(Tracker, CCAEigenGame):
         self.rho = 1e-10
 
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u)
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         check = np.diag(wAw) / np.diag(wBw)
         if self.Bu is None:
             self.Bu = u
