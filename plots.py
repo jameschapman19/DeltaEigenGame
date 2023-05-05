@@ -33,6 +33,12 @@ ORDER = [
 ]
 
 
+DIMENSIONS = {
+    "mnist": (392, 392),
+    "cifar": (1536, 1536),
+    "mediamill": (120, 120),
+}
+
 def get_run_data(ids=None):
     api = wandb.Api(timeout=20)
     runs = api.runs(f"jameschapman/{PROJECT}")
@@ -133,7 +139,7 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0.9, lr=None):
         hue="model",
         hue_order=ORDER,
     )
-    plt.title(f"{data} PCC")
+    plt.title(fr"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})")
     if lr is None:
         lr = "tuned"
     plt.savefig(f"plots/{data}_{batch_size}_pcc_lr_{lr}.png")
@@ -164,6 +170,6 @@ def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
 for data in ["mnist", "cifar", "mediamill"]:
     for batch_size in [100]:
         for lr in [0.0001,0.001, 0.01]:
-            plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=0.001)
-            plot_pcc(data=data, batch_size=batch_size, momentum=0, lr=0.001)
+            plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=lr)
+            plot_pcc(data=data, batch_size=batch_size, momentum=0, lr=lr)
 
