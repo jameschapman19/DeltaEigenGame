@@ -8,12 +8,12 @@ from cca_zoo.models._iterative._base import _default_initializer
 
 class Tracker:
     def fit(
-        self,
-        views: Iterable[np.ndarray],
-        y=None,
-        val_views: Iterable[np.ndarray] = None,
-        log_every=1,
-        true=None,
+            self,
+            views: Iterable[np.ndarray],
+            y=None,
+            val_views: Iterable[np.ndarray] = None,
+            log_every=1,
+            true=None,
     ):
         views = self._validate_inputs(views)
         self._check_params()
@@ -22,7 +22,7 @@ class Tracker:
             views, self.initialization, self.random_state, self.latent_dims
         )
         self.weights = initializer.fit(views).weights
-        self.weights = [weights.astype(np.float32)/4 for weights in self.weights]
+        self.weights = [weights.astype(np.float32) / 4 for weights in self.weights]
         i = 0
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
@@ -73,7 +73,7 @@ class GHAGEP(Tracker, CCAGHAGEP):
 class SGHA(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
-        grads = 2*Aw - 2*Bw @ wAw
+        grads = 2 * Aw - 2 * Bw @ wAw
         return -grads
 
 
@@ -85,7 +85,8 @@ class GammaEigenGame(Tracker, CCAEigenGame):
         self.rho = 1e-10
 
     def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
+        u /= np.linalg.norm(u, axis=0, keepdims=True)
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=False)
         check = np.diag(wAw) / np.diag(wBw)
         if self.Bu is None:
             self.Bu = u
@@ -93,7 +94,7 @@ class GammaEigenGame(Tracker, CCAEigenGame):
         denominator = np.where(denominator > self.rho, np.sqrt(denominator), self.rho)
         y = u / denominator
         By = self.Bu / denominator
-        Ay, _, _, _ = self._get_terms(views, y)
+        Ay, _, _, _ = self._get_terms(views, y, unbiased=False)
         rewards = Aw * np.diag(wBw) - Bw * np.diag(wAw)
         penalties = By @ np.triu(Ay.T @ u * np.diag(wBw), 1) - Bw * np.diag(
             np.tril(u.T @ By, -1) @ Ay.T @ u

@@ -153,7 +153,7 @@ def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     plt.figure()
-    sns.lineplot(data=df, x="Samples Seen", y="Train PVC", hue="model", hue_order=ORDER)
+    sns.lineplot(data=df, x="Samples Seen", y="Train PVC", hue="model", hue_order=ORDER[:-1])
     plt.title(f"{data} PVC")
     if lr is None:
         lr = "tuned"
@@ -163,7 +163,7 @@ def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
 
 for data in ["mnist", "cifar", "mediamill"]:
     for batch_size in [100]:
-        plot_pvc(data=data, batch_size=batch_size, momentum=0.5, lr=0.001)
-        plot_pcc(data=data, batch_size=batch_size, momentum=0.5, lr=0.001)
-        plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=0.001)
-        plot_pcc(data=data, batch_size=batch_size, momentum=0, lr=0.001)
+        for lr in [0.0001,0.001, 0.01]:
+            plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=0.001)
+            plot_pcc(data=data, batch_size=batch_size, momentum=0, lr=0.001)
+
