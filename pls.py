@@ -108,6 +108,21 @@ class Eckhart(Tracker, PLSEigenGame):
         grads = 2 * Aw - (Bw_ @ wBw + Bw @ wBw_)
         return -grads
 
+class EckhartOrdered(Tracker, PLSEigenGame):
+    def grads(self, views, u=None):
+        if self.previous_views is None:
+            self.previous_views = views
+        projections = self.projections(self.previous_views, u)
+        Bw_ = self._Bw(self.previous_views, projections, u)
+        projections = self.projections(views, u)
+        Bw = self._Bw(views, projections, u)
+        Aw = self._Aw(views, projections)
+        self.previous_views = views
+        wBw = u.T @ Bw
+        wBw_ = u.T @ Bw_
+        grads = 2 * Aw - (Bw_ @ np.triu(wBw) + Bw @ np.triu(wBw_))
+        return -grads
+
 class SGHA(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
