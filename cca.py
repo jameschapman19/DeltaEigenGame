@@ -62,6 +62,11 @@ class Subspace(Tracker, CCAEigenGame):
         grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
         return -grads
 
+class Eckhart(Tracker, CCAEigenGame):
+    def grads(self, views, u=None):
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
+        grads = 2 * Aw - (Bw @ wBw + Bw @ wBw)
+        return -grads
 
 class GHAGEP(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):

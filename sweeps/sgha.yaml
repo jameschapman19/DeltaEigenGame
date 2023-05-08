@@ -10,9 +10,10 @@ parameters:
   objective:
     values:
       - pls
+      - cca
   model:
     values:
-      - sgha
+      - eckhart
   data:
     values:
       - mnist

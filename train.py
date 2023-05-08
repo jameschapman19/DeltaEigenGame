@@ -49,6 +49,7 @@ MODEL_DICT = {
         "gha": cca.GHAGEP,
         "saa": rCCA,
         "subspace": cca.Subspace,
+        "eckhart": cca.Eckhart,
     },
     "pls": {
         "sgha": pls.SGHA,
@@ -58,6 +59,7 @@ MODEL_DICT = {
         "sp": pls.StochasticPower,
         "saa": PLS,
         "subspace": pls.Subspace,
+        "eckhart": pls.Eckhart,
     },
 }
 

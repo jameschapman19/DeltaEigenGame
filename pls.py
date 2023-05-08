@@ -93,6 +93,11 @@ class StochasticPower(Tracker, PLSGHAGEP):
         weights = Q @ np.diag(S)
         return weights
 
+class Eckhart(Tracker, PLSEigenGame):
+    def grads(self, views, u=None):
+        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
+        grads = 2 * Aw - (Bw @ wBw + Bw @ wBw)
+        return -grads
 
 class SGHA(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
