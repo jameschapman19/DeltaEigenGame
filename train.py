@@ -17,12 +17,12 @@ def get_arguments():
     )
 
     # Experiment
-    parser.add_argument("--model", type=str, default="gamma", help="Model to train")
-    parser.add_argument("--data", type=str, default="cifar", help="Data directory")
+    parser.add_argument("--model", type=str, default="eckhart", help="Model to train")
+    parser.add_argument("--data", type=str, default="mediamill", help="Data directory")
     parser.add_argument(
         "--objective", type=str, default="cca", help="Objective function"
     )
-    parser.add_argument("--seed", type=int, default=2, help="Random seed")
+    parser.add_argument("--seed", type=int, default=5, help="Random seed")
     parser.add_argument(
         "--components", type=int, default=4, help="Number of components"
     )
@@ -30,7 +30,7 @@ def get_arguments():
     # Parameters
     parser.add_argument("--batch_size", type=int, default=100, help="Batch size")
     parser.add_argument("--epochs", type=int, default=1, help="Number of epochs")
-    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
+    parser.add_argument("--lr", type=float, default=1e-2, help="Learning rate")
     parser.add_argument(
         "--momentum", type=bool, default=0, help="Use Nesterov momentum"
     )
