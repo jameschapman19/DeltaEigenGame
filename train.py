@@ -17,7 +17,7 @@ def get_arguments():
     )
 
     # Experiment
-    parser.add_argument("--model", type=str, default="eckhart", help="Model to train")
+    parser.add_argument("--model", type=str, default="eckhartordered", help="Model to train")
     parser.add_argument("--data", type=str, default="mediamill", help="Data directory")
     parser.add_argument(
         "--objective", type=str, default="cca", help="Objective function"
@@ -50,6 +50,7 @@ MODEL_DICT = {
         "saa": rCCA,
         "subspace": cca.Subspace,
         "eckhart": cca.Eckhart,
+        "eckhartordered": cca.EckhartOrdered,
     },
     "pls": {
         "sgha": pls.SGHA,
@@ -60,6 +61,7 @@ MODEL_DICT = {
         "saa": PLS,
         "subspace": pls.Subspace,
         "eckhart": pls.Eckhart,
+        "eckhartordered": pls.EckhartOrdered,
     },
 }
 
