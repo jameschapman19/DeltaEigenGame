@@ -8,7 +8,6 @@ from cca_zoo.deepmodels import (
     architectures,
     DCCA_NOI,
     DCCA_SDL,
-    BarlowTwins,
 )
 from cca_zoo.deepmodels.objectives import CCA
 from multiviewdata.torchdatasets import NoisyMNIST, SplitMNIST, XRMB
@@ -78,7 +77,6 @@ MODEL_DICT = {
     'DCCAGEPGD': DCCA_GEPGD,
     'DCCANOI': DCCA_NOI,
     'DCCASDL': DCCA_SDL,
-    'BarlowTwins': BarlowTwins,
 }
 
 if __name__ == '__main__':
