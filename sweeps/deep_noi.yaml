@@ -18,7 +18,7 @@ parameters:
   epochs:
     values: [50]
   rho:
-    values: [ 0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.99 ]
+    values: [ 0.6, 0.8, 0.9 ]
   model:
     values: ['DCCANOI','DCCASDL']
   random_seed:

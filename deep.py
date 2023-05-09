@@ -42,7 +42,7 @@ class DCCA_GEPGD(DCCA):
 
     def __init__(self, latent_dims: int, encoders=None, r: float = 0, **kwargs):
         super().__init__(latent_dims=latent_dims, encoders=encoders, **kwargs)
-        self.previous_views = None
+        self.previous_batch = None
 
     def forward(self, views, **kwargs):
         z = []
@@ -50,15 +50,36 @@ class DCCA_GEPGD(DCCA):
             z.append(encoder(views[i]))
         return z
 
-    def loss(self, views, **kwargs):
-        if self.previous_views is None:
-            self.previous_views = views
+    def training_step(self, batch, batch_idx):
+        if self.previous_batch is None:
+            self.previous_batch = batch
+        loss = self.loss(batch["views"], self.previous_batch["views"])
+        for k, v in loss.items():
+            self.log("train/" + k, v, prog_bar=True)
+        return loss["objective"]
+
+    def validation_step(self, batch, batch_idx):
+        loss = self.loss(batch["views"])
+        for k, v in loss.items():
+            self.log("val/" + k, v)
+        return loss["objective"]
+
+    def test_step(self, batch, batch_idx):
+        loss = self.loss(batch["views"])
+        for k, v in loss.items():
+            self.log("test/" + k, v)
+        return loss["objective"]
+
+    def loss(self, views, views2=None,**kwargs):
         z = self(views)
         A, B = self.get_AB(z)
-        z2 = self(self.previous_views)
-        _, B2 = self.get_AB(z2)
-        rewards = 2*torch.trace(A)
-        penalties = torch.trace(B @ B2)
+        if views2 is None:
+            B2=B
+        else:
+            z2 = self(views2)
+            _, B2 = self.get_AB(z2)
+        rewards = 2*torch.trace(A)/self.latent_dims
+        penalties = torch.trace(B @ B2)/self.latent_dims
         return {
             "objective": -rewards.sum() + penalties,
             "rewards": rewards.sum(),
