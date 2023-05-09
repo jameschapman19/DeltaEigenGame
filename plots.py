@@ -14,6 +14,8 @@ sns.set_context("paper", font_scale=1.5)
 PROJECT = "DeltaEigenGame"
 
 MODEL_TO_TITLE = {
+    "eckhart": "GEP-GD",
+    "eckhartordered": "k-GEP-GD",
     "delta": r"k-GEP-GD",
     "subspace": r"GEP-GD",
     "gha": r"GHA",
@@ -24,9 +26,11 @@ MODEL_TO_TITLE = {
 
 # Set order of models in plots
 ORDER = [
-    "k-GEP-GD",
     "GEP-GD",
-    "GHA",
+    #"Eckhart Ordered",
+    #"k-GEP-GD",
+    #"GEP-GD",
+    #"GHA",
     "SGHA",
     r"$\gamma$" + "-EigenGame",
     "Stochastic Power",
@@ -137,13 +141,12 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0.9, lr=None):
         x="Samples Seen",
         y="Train PCC",
         hue="model",
-        hue_order=ORDER,
+        hue_order=ORDER[:-1],
     )
     plt.title(fr"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})")
     if lr is None:
         lr = "tuned"
     plt.savefig(f"plots/{data}_{batch_size}_pcc_lr_{lr}.png")
-    plt.show()
 
 
 def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
@@ -159,12 +162,11 @@ def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     plt.figure()
-    sns.lineplot(data=df, x="Samples Seen", y="Train PVC", hue="model", hue_order=ORDER[:-1])
-    plt.title(f"{data} PVC")
+    sns.lineplot(data=df, x="Samples Seen", y="Train PVC", hue="model", hue_order=ORDER)
+    plt.title(fr"Top 4 PLS on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})")
     if lr is None:
         lr = "tuned"
     plt.savefig(f"plots/{data}_{batch_size}_pvc_lr_{lr}.png")
-    plt.show()
 
 
 for data in ["mnist", "cifar", "mediamill"]:

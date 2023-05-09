@@ -1,0 +1,22 @@
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
+program: deep.py
+method: grid
+parameters:
+  data:
+    values: ['NoisyMNIST','SplitMNIST', 'XRMB']
+  architecture:
+    values: ['nonlinear']
+  batch_size:
+    values: [100]
+  lr:
+    values: [1e-3,1e-4,1e-5]
+  epochs:
+    values: [30]
+  model:
+    values: ['DCCA','DCCAGEPGD']
+  random_seed:
+    values: [1]
