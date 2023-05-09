@@ -4,6 +4,7 @@ command:
   - ${program}
   - ${args}
 program: deep.py
+project: DeepDeltaEigenGame
 method: grid
 parameters:
   data:
@@ -11,11 +12,11 @@ parameters:
   architecture:
     values: ['nonlinear']
   batch_size:
-    values: [100]
+    values: [10]
   lr:
     values: [1e-3,1e-4,1e-5]
   epochs:
-    values: [30]
+    values: [50]
   model:
     values: ['DCCA','DCCAGEPGD']
   random_seed:

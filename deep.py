@@ -51,8 +51,8 @@ class DCCA_GEPGD(DCCA):
     def loss(self, views, **kwargs):
         z = self(views)
         A, B = self.get_AB(z)
-        rewards = torch.trace(A)
-        penalties = torch.trace(A.detach() @ B).sum()
+        rewards = 2*torch.trace(A)
+        penalties = torch.trace(B @ B)
         return {
             "objective": -rewards.sum() + penalties,
             "rewards": rewards.sum(),
