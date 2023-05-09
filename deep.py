@@ -28,10 +28,9 @@ defaults = dict(
     architecture='nonlinear',
     rho=0.1,
     random_seed=42,
-    optimizer='adam'
+    optimizer='adam',
+    project='DeepDeltaEigenGame',
 )
-wandb.init(config=defaults)
-config = wandb.config
 
 class DCCA_GEPGD(DCCA):
     """
@@ -87,9 +86,10 @@ MODEL_DICT = {
 }
 
 if __name__ == '__main__':
+    wandb.init(config=defaults, project='DeepDeltaEigenGame')
+    config = wandb.config
     seed_everything(config.random_seed)
     wandb_logger = WandbLogger(
-        name=f'{config.data}_{config.model}_{config.mnist_type}_{config.lr}_{config.rho}',
     )
     if config.data == 'XRMB':
         feature_size = [273, 112]
