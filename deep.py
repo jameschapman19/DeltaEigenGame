@@ -18,7 +18,7 @@ from torch.utils.data import random_split
 
 WANDB_START_METHOD="thread"
 defaults = dict(
-    data='SplitMNIST',
+    data='NoisyMNIST',
     mnist_type='MNIST',
     lr=0.001,
     batch_size=1000,
@@ -43,6 +43,7 @@ class DCCA_GEPGD(DCCA):
 
     def __init__(self, latent_dims: int, encoders=None, r: float = 0, **kwargs):
         super().__init__(latent_dims=latent_dims, encoders=encoders, **kwargs)
+        self.previous_views = None
 
     def forward(self, views, **kwargs):
         z = []
@@ -51,10 +52,14 @@ class DCCA_GEPGD(DCCA):
         return z
 
     def loss(self, views, **kwargs):
+        if self.previous_views is None:
+            self.previous_views = views
         z = self(views)
         A, B = self.get_AB(z)
+        z2 = self(self.previous_views)
+        _, B2 = self.get_AB(z2)
         rewards = 2*torch.trace(A)
-        penalties = torch.trace(B @ B)
+        penalties = torch.trace(B @ B2)
         return {
             "objective": -rewards.sum() + penalties,
             "rewards": rewards.sum(),
