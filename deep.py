@@ -20,8 +20,8 @@ WANDB_START_METHOD="thread"
 defaults = dict(
     data='NoisyMNIST',
     mnist_type='MNIST',
-    lr=0.001,
-    batch_size=1000,
+    lr=0.0001,
+    batch_size=10,
     latent_dims=50,
     epochs=50,
     model='DCCAGEPGD',
@@ -54,6 +54,7 @@ class DCCA_GEPGD(DCCA):
         if self.previous_batch is None:
             self.previous_batch = batch
         loss = self.loss(batch["views"], self.previous_batch["views"])
+        self.previous_batch = batch
         for k, v in loss.items():
             self.log("train/" + k, v, prog_bar=True)
         return loss["objective"]
@@ -129,8 +130,8 @@ if __name__ == '__main__':
     n_train = int(0.8 * len(train_dataset))
     n_val = len(train_dataset) - n_train
     train_dataset, val_dataset = random_split(train_dataset, (n_train, n_val))
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, num_workers=4)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=4)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, num_workers=4, pin_memory=True,persistent_workers=True)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=4, pin_memory=True,persistent_workers=True)
     if config.architecture == 'linear':
         encoder_1 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[0])
         encoder_2 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[1])
