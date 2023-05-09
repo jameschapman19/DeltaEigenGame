@@ -30,6 +30,8 @@ defaults = dict(
     random_seed=42,
     optimizer='adam'
 )
+wandb.init(config=defaults)
+config = wandb.config
 
 class DCCA_GEPGD(DCCA):
     """
@@ -80,10 +82,10 @@ MODEL_DICT = {
 }
 
 if __name__ == '__main__':
-    wandb.init(config=defaults)
-    config = wandb.config
     seed_everything(config.random_seed)
-    wandb_logger = WandbLogger()
+    wandb_logger = WandbLogger(
+        name=f'{config.data}_{config.model}_{config.mnist_type}_{config.lr}_{config.rho}',
+    )
     if config.data == 'XRMB':
         feature_size = [273, 112]
         train_dataset = XRMB(root=os.getcwd(), train=True, download=True)
@@ -114,13 +116,13 @@ if __name__ == '__main__':
     else:
         raise ValueError('architecture not supported')
     if config.model == 'DCCANOI':
-        dcca = DCCA_NOI(N=len(train_dataset), latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
+        dcca = DCCA_NOI(latent_dims=config.latent_dims,N=len(train_dataset), encoders=[encoder_1, encoder_2],
                         lr=config.lr, rho=config.rho, optimizer=config.optimizer)
     elif config.model == 'DCCA':
         dcca = DCCA(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
                         lr=config.lr, rho=config.rho, optimizer=config.optimizer, objective=CCA)
     elif config.model == 'DCCASDL':
-        dcca = DCCA_SDL(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
+        dcca = DCCA_SDL(latent_dims=config.latent_dims,N=len(train_dataset), encoders=[encoder_1, encoder_2],
                         lr=config.lr, rho=config.rho, optimizer=config.optimizer)
     elif config.model == 'DCCAGEPGD':
         dcca = DCCA_GEPGD(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
@@ -139,4 +141,3 @@ if __name__ == '__main__':
         enable_progress_bar=False,
     )
     trainer.fit(dcca, train_loader, val_loader)
-    wandb.finish()
