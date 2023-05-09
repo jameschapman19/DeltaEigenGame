@@ -23,7 +23,7 @@ defaults = dict(
     lr=0.001,
     batch_size=1000,
     latent_dims=50,
-    epochs=30,
+    epochs=50,
     model='DCCAGEPGD',
     architecture='nonlinear',
     rho=0.1,
@@ -119,6 +119,12 @@ if __name__ == '__main__':
     elif config.model == 'DCCA':
         dcca = DCCA(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
                         lr=config.lr, rho=config.rho, optimizer=config.optimizer, objective=CCA)
+    elif config.model == 'DCCASDL':
+        dcca = DCCA_SDL(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
+                        lr=config.lr, rho=config.rho, optimizer=config.optimizer)
+    elif config.model == 'DCCAGEPGD':
+        dcca = DCCA_GEPGD(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
+                        lr=config.lr, optimizer=config.optimizer)
     else:
         dcca = MODEL_DICT[config.model](latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2], lr=config.lr, optimizer=config.optimizer)
     trainer = pl.Trainer(

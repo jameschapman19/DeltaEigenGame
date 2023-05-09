@@ -16,10 +16,8 @@ parameters:
   lr:
     values: [1e-3,1e-4,1e-5]
   epochs:
-    values: [30]
-  rho:
-    values: [ 0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.99 ]
+    values: [50]
   model:
-    values: ['DCCANOI','DCCASDL']
+    values: ['DCCAGEPGD']
   random_seed:
     values: [1]

@@ -8,7 +8,7 @@ project: DeepDeltaEigenGame
 method: grid
 parameters:
   data:
-    values: ['NoisyMNIST','SplitMNIST', 'XRMB']
+    values: ['NoisyMNIST','SplitMNIST']
   architecture:
     values: ['nonlinear']
   batch_size:
@@ -18,6 +18,6 @@ parameters:
   epochs:
     values: [50]
   model:
-    values: ['DCCA','DCCAGEPGD']
+    values: ['DCCA']
   random_seed:
     values: [1]
