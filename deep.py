@@ -9,6 +9,7 @@ from cca_zoo.deepmodels import (
     DCCA_NOI,
     DCCA_SDL,
 )
+from cca_zoo.deepmodels.callbacks import CorrelationCallback
 from cca_zoo.deepmodels.objectives import CCA
 from multiviewdata.torchdatasets import NoisyMNIST, SplitMNIST, XRMB
 from pytorch_lightning import seed_everything
@@ -16,7 +17,7 @@ from pytorch_lightning.loggers import WandbLogger
 from torch.cuda import device_count
 from torch.utils.data import random_split
 
-WANDB_START_METHOD="thread"
+WANDB_START_METHOD = "thread"
 defaults = dict(
     data='NoisyMNIST',
     mnist_type='MNIST',
@@ -31,6 +32,7 @@ defaults = dict(
     optimizer='adam',
     project='DeepDeltaEigenGame',
 )
+
 
 class DCCA_GEPGD(DCCA):
     """
@@ -71,16 +73,16 @@ class DCCA_GEPGD(DCCA):
             self.log("test/" + k, v)
         return loss["objective"]
 
-    def loss(self, views, views2=None,**kwargs):
+    def loss(self, views, views2=None, **kwargs):
         z = self(views)
         A, B = self.get_AB(z)
         if views2 is None:
-            B2=B
+            B2 = B
         else:
             z2 = self(views2)
             _, B2 = self.get_AB(z2)
-        rewards = 2*torch.trace(A)/self.latent_dims
-        penalties = torch.trace(B @ B2)/self.latent_dims
+        rewards = 2 * torch.trace(A) / self.latent_dims
+        penalties = torch.trace(B @ B2) / self.latent_dims
         return {
             "objective": -rewards.sum() + penalties,
             "rewards": rewards.sum(),
@@ -96,9 +98,10 @@ class DCCA_GEPGD(DCCA):
                 if i == j:
                     B += torch.cov(zi.T)
                 A += torch.cov(torch.hstack((zi, zj)).T)[
-                    self.latent_dims :, : self.latent_dims
-                ]
+                     self.latent_dims:, : self.latent_dims
+                     ]
         return A / len(z), B / len(z)
+
 
 MODEL_DICT = {
     'DCCA': DCCA,
@@ -130,8 +133,10 @@ if __name__ == '__main__':
     n_train = int(0.8 * len(train_dataset))
     n_val = len(train_dataset) - n_train
     train_dataset, val_dataset = random_split(train_dataset, (n_train, n_val))
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, num_workers=4, pin_memory=True,persistent_workers=True)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=4, pin_memory=True,persistent_workers=True)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
+                                               num_workers=4, pin_memory=True, persistent_workers=True)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=4,
+                                             pin_memory=True, persistent_workers=True)
     if config.architecture == 'linear':
         encoder_1 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[0])
         encoder_2 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[1])
@@ -143,19 +148,20 @@ if __name__ == '__main__':
     else:
         raise ValueError('architecture not supported')
     if config.model == 'DCCANOI':
-        dcca = DCCA_NOI(latent_dims=config.latent_dims,N=len(train_dataset), encoders=[encoder_1, encoder_2],
+        dcca = DCCA_NOI(latent_dims=config.latent_dims, N=len(train_dataset), encoders=[encoder_1, encoder_2],
                         lr=config.lr, rho=config.rho, optimizer=config.optimizer)
     elif config.model == 'DCCA':
         dcca = DCCA(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
-                        lr=config.lr, rho=config.rho, optimizer=config.optimizer, objective=CCA)
+                    lr=config.lr, rho=config.rho, optimizer=config.optimizer, objective=CCA)
     elif config.model == 'DCCASDL':
-        dcca = DCCA_SDL(latent_dims=config.latent_dims,N=len(train_dataset), encoders=[encoder_1, encoder_2],
+        dcca = DCCA_SDL(latent_dims=config.latent_dims, N=len(train_dataset), encoders=[encoder_1, encoder_2],
                         lr=config.lr, rho=config.rho, optimizer=config.optimizer)
     elif config.model == 'DCCAGEPGD':
         dcca = DCCA_GEPGD(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
-                        lr=config.lr, optimizer=config.optimizer)
+                          lr=config.lr, optimizer=config.optimizer)
     else:
-        dcca = MODEL_DICT[config.model](latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2], lr=config.lr, optimizer=config.optimizer)
+        dcca = MODEL_DICT[config.model](latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2], lr=config.lr,
+                                        optimizer=config.optimizer)
     trainer = pl.Trainer(
         max_epochs=config.epochs,
         logger=wandb_logger,
