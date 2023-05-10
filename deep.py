@@ -18,10 +18,10 @@ from torch.utils.data import random_split
 
 WANDB_START_METHOD = "thread"
 defaults = dict(
-    data='NoisyMNIST',
+    data='SplitMNIST',
     mnist_type='MNIST',
-    lr=0.0001,
-    batch_size=10,
+    lr=0.01,
+    batch_size=1000,
     latent_dims=50,
     epochs=50,
     model='DCCAGEPGD',
@@ -30,6 +30,7 @@ defaults = dict(
     random_seed=42,
     optimizer='adam',
     project='DeepDeltaEigenGame',
+    num_workers=0,
 )
 
 
@@ -80,26 +81,23 @@ class DCCA_GEPGD(DCCA):
         else:
             z2 = self(views2)
             _, B2 = self.get_AB(z2)
-        rewards = 2 * torch.trace(A) / self.latent_dims
+        rewards = torch.trace(2*A) / self.latent_dims
         penalties = torch.trace(B @ B2) / self.latent_dims
         return {
-            "objective": -rewards.sum() + penalties,
-            "rewards": rewards.sum(),
+            "objective": -rewards + penalties,
+            "rewards": rewards,
             "penalties": penalties,
         }
 
     def get_AB(self, z):
-        # sum the pairwise covariances between each z and all other zs
-        A = torch.zeros(self.latent_dims, self.latent_dims, device=z[0].device)
-        B = torch.zeros(self.latent_dims, self.latent_dims, device=z[0].device)
-        for i, zi in enumerate(z):
-            for j, zj in enumerate(z):
-                if i == j:
-                    B += torch.cov(zi.T)
-                A += torch.cov(torch.hstack((zi, zj)).T)[
-                     self.latent_dims:, : self.latent_dims
-                     ]
-        return A / len(z), B / len(z)
+
+        N, D = z[0].size()
+
+        A = torch.einsum("bi, bj -> ij", z[0], z[1]) / N
+
+        B = (torch.einsum("bi, bj -> ij",z[0],z[0]) / N + torch.einsum("bi, bj -> ij", z[1],z[1]) / N) / 2
+
+        return A+B, B
 
 
 MODEL_DICT = {
@@ -132,10 +130,14 @@ if __name__ == '__main__':
     n_train = int(0.8 * len(train_dataset))
     n_val = len(train_dataset) - n_train
     train_dataset, val_dataset = random_split(train_dataset, (n_train, n_val))
+    if config.num_workers == 0:
+        persistent_workers = False
+    else:
+        persistent_workers = True
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
-                                               num_workers=4, pin_memory=True, persistent_workers=True)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=4,
-                                             pin_memory=True, persistent_workers=True)
+                                               num_workers=config.num_workers, pin_memory=True, persistent_workers=persistent_workers)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers,
+                                             pin_memory=True, persistent_workers=persistent_workers)
     if config.architecture == 'linear':
         encoder_1 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[0])
         encoder_2 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[1])
