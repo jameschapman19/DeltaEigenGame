@@ -57,7 +57,7 @@ class DCCA_GEPGD(DCCA):
         loss = self.loss(batch["views"], self.previous_batch["views"])
         self.previous_batch = batch
         for k, v in loss.items():
-            self.log("train/" + k, v, prog_bar=True)
+            self.log("train/" + k, v, prog_bar=False)
         return loss["objective"]
 
     def validation_step(self, batch, batch_idx):

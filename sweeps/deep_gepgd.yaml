@@ -14,7 +14,7 @@ parameters:
   batch_size:
     values: [10]
   lr:
-    values: [1e-3,1e-4,1e-5]
+    values: [5e-3,5e-4,5e-5]
   epochs:
     values: [50]
   model:
