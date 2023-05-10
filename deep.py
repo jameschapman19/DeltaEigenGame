@@ -9,7 +9,6 @@ from cca_zoo.deepmodels import (
     DCCA_NOI,
     DCCA_SDL,
 )
-from cca_zoo.deepmodels.callbacks import CorrelationCallback
 from cca_zoo.deepmodels.objectives import CCA
 from multiviewdata.torchdatasets import NoisyMNIST, SplitMNIST, XRMB
 from pytorch_lightning import seed_everything
