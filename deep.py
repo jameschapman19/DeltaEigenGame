@@ -18,9 +18,9 @@ from torch.utils.data import random_split
 
 WANDB_START_METHOD = "thread"
 defaults = dict(
-    data='SplitMNIST',
+    data='NoisyMNIST',
     mnist_type='MNIST',
-    lr=0.0001,
+    lr=0.01,
     batch_size=100,
     latent_dims=50,
     epochs=50,
@@ -30,7 +30,7 @@ defaults = dict(
     random_seed=1,
     optimizer='adam',
     project='DeepDeltaEigenGame',
-    num_workers=4,
+    num_workers=0,
 )
 
 
@@ -106,16 +106,16 @@ if __name__ == '__main__':
     )
     if config.data == 'XRMB':
         feature_size = [273, 112]
-        train_dataset = XRMB(root=os.getcwd(), train=True, download=True)
-        test_dataset = XRMB(root=os.getcwd(), train=False, download=True)
+        train_dataset = XRMB(root=os.getcwd(), train=True, download=False)
+        test_dataset = XRMB(root=os.getcwd(), train=False, download=False)
     elif config.data == 'SplitMNIST':
         feature_size = [392, 392]
-        train_dataset = SplitMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=True)
-        test_dataset = SplitMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True)
+        train_dataset = SplitMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False)
+        test_dataset = SplitMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False)
     elif config.data == 'NoisyMNIST':
         feature_size = [784, 784]
-        train_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=True)
-        test_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True)
+        train_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False)
+        test_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False)
     else:
         raise ValueError('dataset not supported')
     n_train = int(0.8 * len(train_dataset))
