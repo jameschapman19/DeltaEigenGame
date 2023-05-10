@@ -7,7 +7,7 @@ from cca_zoo.deepmodels import (
     DCCA,
     architectures,
     DCCA_NOI,
-    DCCA_SDL,
+    DCCA_SDL, DCCA_EigenGame,
 )
 from cca_zoo.deepmodels.objectives import CCA
 from multiviewdata.torchdatasets import NoisyMNIST, SplitMNIST, XRMB
@@ -20,21 +20,21 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data='SplitMNIST',
     mnist_type='MNIST',
-    lr=0.01,
-    batch_size=1000,
+    lr=0.0001,
+    batch_size=100,
     latent_dims=50,
     epochs=50,
     model='DCCAGEPGD',
     architecture='nonlinear',
     rho=0.1,
-    random_seed=42,
+    random_seed=1,
     optimizer='adam',
     project='DeepDeltaEigenGame',
     num_workers=0,
 )
 
 
-class DCCA_GEPGD(DCCA):
+class DCCA_GEPGD(DCCA_EigenGame):
     """
 
     References
@@ -55,7 +55,7 @@ class DCCA_GEPGD(DCCA):
     def training_step(self, batch, batch_idx):
         if self.previous_batch is None:
             self.previous_batch = batch
-        loss = self.loss(batch["views"], self.previous_batch["views"])
+        loss = self.loss(batch["views"] , self.previous_batch["views"])
         self.previous_batch = batch
         for k, v in loss.items():
             self.log("train/" + k, v, prog_bar=False)
@@ -80,24 +80,15 @@ class DCCA_GEPGD(DCCA):
             B2 = B
         else:
             z2 = self(views2)
-            _, B2 = self.get_AB(z2)
-        rewards = torch.trace(2*A) / self.latent_dims
-        penalties = torch.trace(B @ B2) / self.latent_dims
+            A2, B2 = self.get_AB(z2)
+        rewards = torch.trace(2 * A)
+        penalties = torch.trace(B @ B2)
         return {
             "objective": -rewards + penalties,
             "rewards": rewards,
             "penalties": penalties,
         }
 
-    def get_AB(self, z):
-
-        N, D = z[0].size()
-
-        A = torch.einsum("bi, bj -> ij", z[0], z[1]) / N
-
-        B = (torch.einsum("bi, bj -> ij",z[0],z[0]) / N + torch.einsum("bi, bj -> ij", z[1],z[1]) / N) / 2
-
-        return A+B, B
 
 
 MODEL_DICT = {
@@ -135,8 +126,10 @@ if __name__ == '__main__':
     else:
         persistent_workers = True
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
-                                               num_workers=config.num_workers, pin_memory=True, persistent_workers=persistent_workers)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers,
+                                               num_workers=config.num_workers, pin_memory=True,
+                                               persistent_workers=persistent_workers)
+    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False,
+                                             num_workers=config.num_workers,
                                              pin_memory=True, persistent_workers=persistent_workers)
     if config.architecture == 'linear':
         encoder_1 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[0])
