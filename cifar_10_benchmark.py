@@ -95,6 +95,7 @@ from lightly.transforms import (
 from lightly.transforms.utils import IMAGENET_NORMALIZE
 from lightly.utils.benchmarking import BenchmarkModule
 
+
 import torch
 import torch.distributed as dist
 class GEPGDLoss(torch.nn.Module):
@@ -228,8 +229,13 @@ else:
 #  L horse/
 #  L ship/
 #  L truck/
-path_to_train = "/datasets/cifar10/train/"
-path_to_test = "/datasets/cifar10/test/"
+
+path_to_train = "/cluster/project9/CCA_public/data/CIFAR10"
+path_to_test = "/cluster/project9/CCA_public/data/CIFAR10"
+
+if not os.path.exists(path_to_train):
+    path_to_train= "C:/Users/chapm/archive/CIFAR10"
+    path_to_test = "C:/Users/chapm/archive/CIFAR10"
 
 # Collate function init
 collate_fn = MultiViewCollate()
@@ -288,10 +294,16 @@ test_transforms = torchvision.transforms.Compose(
     ]
 )
 
-# we use test transformations for getting the feature for kNN on train data
-dataset_train_kNN = LightlyDataset(input_dir=path_to_train, transform=test_transforms)
+dataset = torchvision.datasets.CIFAR10(root=path_to_train, train=True)
+test_dataset = torchvision.datasets.CIFAR10(root=path_to_test, train=False)
 
-dataset_test = LightlyDataset(input_dir=path_to_test, transform=test_transforms)
+
+# we use test transformations for getting the feature for kNN on train data
+
+
+dataset_train_kNN = LightlyDataset.from_torch_dataset(dataset, transform=test_transforms)
+
+dataset_test = LightlyDataset.from_torch_dataset(test_dataset, transform=test_transforms)
 
 
 def create_dataset_train_ssl(model):
@@ -317,7 +329,8 @@ def create_dataset_train_ssl(model):
         SMoGModel: smog_transform,
     }
     transform = model_to_transform[model]
-    return LightlyDataset(input_dir=path_to_train, transform=transform)
+    dataset = torchvision.datasets.CIFAR10(root=path_to_train, train=True)
+    return LightlyDataset.from_torch_dataset(dataset, transform=transform)
 
 
 def get_data_loaders(batch_size: int, dataset_train_ssl):
@@ -986,17 +999,17 @@ class SMoGModel(BenchmarkModule):
 
 models = [
     GEPGDModel,
-    BarlowTwinsModel,
-    BYOLModel,
-    DCL,
-    DCLW,
-    DINOModel,
-    MocoModel,
-    NNCLRModel,
-    SimCLRModel,
-    SimSiamModel,
-    SwaVModel,
-    SMoGModel,
+    # BarlowTwinsModel,
+    # BYOLModel,
+    # DCL,
+    # DCLW,
+    # DINOModel,
+    # MocoModel,
+    # NNCLRModel,
+    # SimCLRModel,
+    # SimSiamModel,
+    # SwaVModel,
+    # SMoGModel,
 ]
 bench_results = dict()
 

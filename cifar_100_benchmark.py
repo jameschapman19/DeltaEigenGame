@@ -174,8 +174,12 @@ else:
 
 # The dataset structure should be like this:
 
-path_to_train = "/datasets/imagenet100/train/"
-path_to_test = "/datasets/imagenet100/val/"
+path_to_train = "/cluster/project9/CCA_public/data/CIFAR100"
+path_to_test = "/cluster/project9/CCA_public/data/CIFAR100"
+
+if not os.path.exists(path_to_train):
+    path_to_train= "C:/Users/chapm/archive/CIFAR100"
+    path_to_test = "C:/Users/chapm/archive/CIFAR100"
 
 # Collate function init
 collate_fn = MultiViewCollate()
@@ -209,12 +213,16 @@ test_transforms = torchvision.transforms.Compose(
 )
 
 
-dataset_train_ssl = LightlyDataset(input_dir=path_to_train)
+dataset = torchvision.datasets.CIFAR100(root=path_to_train, train=True)
+test_dataset = torchvision.datasets.CIFAR100(root=path_to_test, train=False)
+
 
 # we use test transformations for getting the feature for kNN on train data
-dataset_train_kNN = LightlyDataset(input_dir=path_to_train, transform=test_transforms)
 
-dataset_test = LightlyDataset(input_dir=path_to_test, transform=test_transforms)
+
+dataset_train_kNN = LightlyDataset.from_torch_dataset(dataset, transform=test_transforms)
+
+dataset_test = LightlyDataset.from_torch_dataset(test_dataset, transform=test_transforms)
 
 steps_per_epoch = len(LightlyDataset(input_dir=path_to_train)) // batch_size
 
@@ -239,7 +247,8 @@ def create_dataset_train_ssl(model):
         SwaVModel: swav_transform,
     }
     transform = model_to_transform[model]
-    return LightlyDataset(input_dir=path_to_train, transform=transform)
+    dataset = torchvision.datasets.CIFAR100(root=path_to_train, train=True)
+    return LightlyDataset.from_torch_dataset(dataset, transform=transform)
 
 
 def get_data_loaders(batch_size: int, dataset_train_ssl):
@@ -746,14 +755,14 @@ class DINOModel(BenchmarkModule):
 
 models = [
     GEPGDModel,
-    BarlowTwinsModel,
-    BYOLModel,
-    DINOModel,
-    MocoModel,
-    NNCLRModel,
-    SimCLRModel,
-    SimSiamModel,
-    SwaVModel,
+    # BarlowTwinsModel,
+    # BYOLModel,
+    # DINOModel,
+    # MocoModel,
+    # NNCLRModel,
+    # SimCLRModel,
+    # SimSiamModel,
+    # SwaVModel,
 ]
 bench_results = dict()
 
