@@ -30,7 +30,7 @@ defaults = dict(
     random_seed=1,
     optimizer='adam',
     project='DeepDeltaEigenGame',
-    num_workers=0,
+    num_workers=4,
 )
 
 
@@ -82,7 +82,7 @@ class DCCA_GEPGD(DCCA_EigenGame):
             z2 = self(views2)
             A2, B2 = self.get_AB(z2)
         rewards = torch.trace(2 * A)
-        penalties = torch.trace(B @ B2)
+        penalties = torch.trace(B @ B)
         return {
             "objective": -rewards + penalties,
             "rewards": rewards,
