@@ -14,10 +14,10 @@ parameters:
   batch_size:
     values: [100]
   lr:
-    values: [1e-3,1e-4,1e-5]
+    values: [5e-3,5e-4]
   epochs:
     values: [50]
   model:
-    values: ['DCCAGH','DCCAEY']
+    values: ['DCCAGH']
   random_seed:
     values: [1]

@@ -13,8 +13,7 @@ parameters:
       - cca
   model:
     values:
-      - eckhart
-      - eckhartordered
+      - sgha
   data:
     values:
       - mnist

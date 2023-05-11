@@ -16,6 +16,7 @@ from pytorch_lightning.loggers import WandbLogger
 from torch.cuda import device_count
 from torch.utils.data import random_split
 
+
 WANDB_START_METHOD = "thread"
 defaults = dict(
     data='SplitMNIST',
@@ -24,7 +25,7 @@ defaults = dict(
     batch_size=100,
     latent_dims=50,
     epochs=50,
-    model='DCCAGH',
+    model='DCCAEY',
     architecture='nonlinear',
     rho=0.1,
     random_seed=1,
@@ -62,7 +63,9 @@ class DCCA_EY(DCCA_EigenGame):
         return loss["objective"]
 
     def validation_step(self, batch, batch_idx):
-        loss = self.loss(batch["views"])
+        if self.val_previous_batch is None:
+            self.val_previous_batch = batch
+        loss = self.loss(batch["views"], self.val_previous_batch["views"])
         for k, v in loss.items():
             self.log("val/" + k, v)
         return loss["objective"]
@@ -72,6 +75,19 @@ class DCCA_EY(DCCA_EigenGame):
         for k, v in loss.items():
             self.log("test/" + k, v)
         return loss["objective"]
+
+    def get_AB(self, z):
+        # sum the pairwise covariances between each z and all other zs
+        A = torch.zeros(self.latent_dims, self.latent_dims, device=z[0].device)
+        B = torch.zeros(self.latent_dims, self.latent_dims, device=z[0].device)
+        for i, zi in enumerate(z):
+            for j, zj in enumerate(z):
+                if i == j:
+                    B += torch.cov(zi.T)
+                A += torch.cov(torch.hstack((zi, zj)).T)[
+                    self.latent_dims :, : self.latent_dims
+                ]
+        return A, B
 
     def loss(self, views, views2=None, **kwargs):
         z = self(views)
@@ -98,7 +114,7 @@ class DCCA_GH(DCCA_EY):
         else:
             z2 = self(views2)
             A2, B2 = self.get_AB(z2)
-        rewards = torch.trace(2 * A)
+        rewards = torch.trace(2*A)
         penalties = torch.trace(A @ B2)
         return {
             "objective": -rewards + penalties,
@@ -131,8 +147,12 @@ if __name__ == '__main__':
         test_dataset = SplitMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False)
     elif config.data == 'NoisyMNIST':
         feature_size = [784, 784]
-        train_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False)
-        test_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False)
+        train_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False,transform=transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,)))
+        test_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False,transform=transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,)))
     else:
         raise ValueError('dataset not supported')
     n_train = int(0.8 * len(train_dataset))
