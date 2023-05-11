@@ -18,9 +18,9 @@ from torch.utils.data import random_split
 
 WANDB_START_METHOD = "thread"
 defaults = dict(
-    data='NoisyMNIST',
+    data='SplitMNIST',
     mnist_type='MNIST',
-    lr=0.01,
+    lr=0.0002,
     batch_size=100,
     latent_dims=50,
     epochs=50,
@@ -30,7 +30,7 @@ defaults = dict(
     random_seed=1,
     optimizer='adam',
     project='DeepDeltaEigenGame',
-    num_workers=4,
+    num_workers=0,
 )
 
 
@@ -82,7 +82,7 @@ class DCCA_GEPGD(DCCA_EigenGame):
             z2 = self(views2)
             A2, B2 = self.get_AB(z2)
         rewards = torch.trace(2 * A)
-        penalties = torch.trace(B @ B)
+        penalties = torch.trace(B @ B2)
         return {
             "objective": -rewards + penalties,
             "rewards": rewards,

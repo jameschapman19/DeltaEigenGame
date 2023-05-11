@@ -4,7 +4,7 @@ command:
   - ${program}
   - ${args}
 program: train.py
-project: DeltaEigenGame
+project: GEP-GD
 method: grid
 parameters:
   objective:
@@ -13,11 +13,8 @@ parameters:
       - pls
   model:
     values:
-      - delta
-      - gha
-      - sgha
-      - gamma
-      - subspace
+      - ghgep
+      - eygep
   data:
     values:
       - mnist

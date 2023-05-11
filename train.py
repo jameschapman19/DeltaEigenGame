@@ -45,23 +45,17 @@ MODEL_DICT = {
     "cca": {
         "sgha": cca.SGHA,
         "gamma": cca.GammaEigenGame,
-        "delta": cca.DeltaEigenGame,
-        "gha": cca.GHAGEP,
         "saa": rCCA,
-        "subspace": cca.Subspace,
-        "eckhart": cca.Eckhart,
-        "eckhartordered": cca.EckhartOrdered,
+        "ghgep": cca.GHGEP,
+        "eygep": cca.EYGEP
     },
     "pls": {
         "sgha": pls.SGHA,
         "gamma": pls.GammaEigenGame,
-        "delta": pls.DeltaEigenGame,
-        "gha": pls.GHAGEP,
         "sp": pls.StochasticPower,
         "saa": PLS,
-        "subspace": pls.Subspace,
-        "eckhart": pls.Eckhart,
-        "eckhartordered": pls.EckhartOrdered,
+        "ghgep": pls.GHGEP,
+        "eygep": pls.EYGEP
     },
 }
 
@@ -142,6 +136,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     args = vars(args)
-    wandb.init(config=args, mode="online")
+    wandb.init(config=args)
     main()
     wandb.finish()

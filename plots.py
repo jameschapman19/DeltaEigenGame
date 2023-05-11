@@ -11,7 +11,7 @@ import numpy as np
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=1.5)
 
-PROJECT = "DeltaEigenGame"
+PROJECT = "GEP-GD"
 
 MODEL_TO_TITLE = {
     "eckhart": "GEP-GD",

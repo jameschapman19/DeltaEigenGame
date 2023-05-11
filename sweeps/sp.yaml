@@ -4,7 +4,7 @@ command:
   - ${program}
   - ${args}
 program: train.py
-project: DeltaEigenGame
+project: GEP-GD
 method: grid
 parameters:
   objective:

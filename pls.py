@@ -59,25 +59,6 @@ class Tracker:
         S = np.sign(np.sign(np.diag(R)) + 0.5)
         return Q @ np.diag(S)
 
-
-class DeltaEigenGame(Tracker, PLSEigenGame):
-    pass
-
-
-class Subspace(Tracker, PLSEigenGame):
-    def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
-        grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
-        return -grads
-
-
-class GHAGEP(Tracker, PLSGHAGEP):
-    def grads(self, views, u=None):
-        Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
-        grads = Aw - Bw @ np.triu(wAw)
-        return -grads
-
-
 class StochasticPower(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
@@ -93,7 +74,20 @@ class StochasticPower(Tracker, PLSGHAGEP):
         weights = Q @ np.diag(S)
         return weights
 
-class Eckhart(Tracker, PLSEigenGame):
+class GHGEP(Tracker, PLSEigenGame):
+    def grads(self, views, u=None):
+        if self.previous_views is None:
+            self.previous_views = views
+        projections = self.projections(self.previous_views, u)
+        Bw = self._Bw(self.previous_views, projections, u)
+        projections = self.projections(views, u)
+        Aw = self._Aw(views, projections, u)
+        wBw = u.T @ Bw
+        wAw = u.T @ Aw
+        grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
+        return -grads
+
+class EYGEP(Tracker, PLSEigenGame):
     def grads(self, views, u=None):
         if self.previous_views is None:
             self.previous_views = views
@@ -108,25 +102,11 @@ class Eckhart(Tracker, PLSEigenGame):
         grads = 2 * Aw - (Bw_ @ wBw + Bw @ wBw_)
         return -grads
 
-class EckhartOrdered(Tracker, PLSEigenGame):
-    def grads(self, views, u=None):
-        if self.previous_views is None:
-            self.previous_views = views
-        projections = self.projections(self.previous_views, u)
-        Bw_ = self._Bw(self.previous_views, projections, u)
-        projections = self.projections(views, u)
-        Bw = self._Bw(views, projections, u)
-        Aw = self._Aw(views, projections)
-        self.previous_views = views
-        wBw = u.T @ Bw
-        wBw_ = u.T @ Bw_
-        grads = 2 * Aw - (Bw_ @ np.triu(wBw) + Bw @ np.triu(wBw_))
-        return -grads
-
 class SGHA(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
-        return -2*Aw + Bw @ wAw
+        grads = Aw - Bw @ wAw
+        return -grads
 
 
 class GammaEigenGame(Tracker, PLSEigenGame):
