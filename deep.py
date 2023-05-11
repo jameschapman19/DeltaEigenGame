@@ -147,12 +147,8 @@ if __name__ == '__main__':
         test_dataset = SplitMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False)
     elif config.data == 'NoisyMNIST':
         feature_size = [784, 784]
-        train_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False,transform=transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,)))
-        test_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False,transform=transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,)))
+        train_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False)
+        test_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False)
     else:
         raise ValueError('dataset not supported')
     n_train = int(0.8 * len(train_dataset))
