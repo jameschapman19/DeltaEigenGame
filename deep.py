@@ -7,7 +7,7 @@ from cca_zoo.deepmodels import (
     DCCA,
     architectures,
     DCCA_NOI,
-    DCCA_SDL, DCCA_EigenGame,
+    DCCA_EigenGame,
 )
 from cca_zoo.deepmodels.objectives import CCA
 from multiviewdata.torchdatasets import NoisyMNIST, SplitMNIST, XRMB
@@ -20,7 +20,7 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data='SplitMNIST',
     mnist_type='MNIST',
-    lr=0.0002,
+    lr=0.0001,
     batch_size=100,
     latent_dims=50,
     epochs=50,
@@ -34,7 +34,7 @@ defaults = dict(
 )
 
 
-class DCCA_GEPGD(DCCA_EigenGame):
+class DCCA_EY(DCCA_EigenGame):
     """
 
     References
@@ -82,6 +82,23 @@ class DCCA_GEPGD(DCCA_EigenGame):
             z2 = self(views2)
             A2, B2 = self.get_AB(z2)
         rewards = torch.trace(2 * A)
+        penalties = torch.trace(A @ B2)
+        return {
+            "objective": -rewards + penalties,
+            "rewards": rewards,
+            "penalties": penalties,
+        }
+
+class DCCA_GH(DCCA_EY):
+    def loss(self, views, views2=None, **kwargs):
+        z = self(views)
+        A, B = self.get_AB(z)
+        if views2 is None:
+            B2 = B
+        else:
+            z2 = self(views2)
+            A2, B2 = self.get_AB(z2)
+        rewards = torch.trace(2 * A)
         penalties = torch.trace(B @ B2)
         return {
             "objective": -rewards + penalties,
@@ -93,9 +110,9 @@ class DCCA_GEPGD(DCCA_EigenGame):
 
 MODEL_DICT = {
     'DCCA': DCCA,
-    'DCCAGEPGD': DCCA_GEPGD,
+    'DCCAEY': DCCA_EY,
+    'DCCAGH': DCCA_GH,
     'DCCANOI': DCCA_NOI,
-    'DCCASDL': DCCA_SDL,
 }
 
 if __name__ == '__main__':
@@ -147,12 +164,6 @@ if __name__ == '__main__':
     elif config.model == 'DCCA':
         dcca = DCCA(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
                     lr=config.lr, rho=config.rho, optimizer=config.optimizer, objective=CCA)
-    elif config.model == 'DCCASDL':
-        dcca = DCCA_SDL(latent_dims=config.latent_dims, N=len(train_dataset), encoders=[encoder_1, encoder_2],
-                        lr=config.lr, rho=config.rho, optimizer=config.optimizer)
-    elif config.model == 'DCCAGEPGD':
-        dcca = DCCA_GEPGD(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
-                          lr=config.lr, optimizer=config.optimizer)
     else:
         dcca = MODEL_DICT[config.model](latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2], lr=config.lr,
                                         optimizer=config.optimizer)
