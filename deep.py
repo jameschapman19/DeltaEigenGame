@@ -24,7 +24,7 @@ defaults = dict(
     batch_size=100,
     latent_dims=50,
     epochs=50,
-    model='DCCAGEPGD',
+    model='DCCAGH',
     architecture='nonlinear',
     rho=0.1,
     random_seed=1,
@@ -82,7 +82,7 @@ class DCCA_EY(DCCA_EigenGame):
             z2 = self(views2)
             A2, B2 = self.get_AB(z2)
         rewards = torch.trace(2 * A)
-        penalties = torch.trace(A @ B2)
+        penalties = torch.trace(B @ B2)
         return {
             "objective": -rewards + penalties,
             "rewards": rewards,
@@ -99,7 +99,7 @@ class DCCA_GH(DCCA_EY):
             z2 = self(views2)
             A2, B2 = self.get_AB(z2)
         rewards = torch.trace(2 * A)
-        penalties = torch.trace(B @ B2)
+        penalties = torch.trace(A @ B2)
         return {
             "objective": -rewards + penalties,
             "rewards": rewards,
