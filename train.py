@@ -17,7 +17,7 @@ def get_arguments():
     )
 
     # Experiment
-    parser.add_argument("--model", type=str, default="eckhart", help="Model to train")
+    parser.add_argument("--model", type=str, default="ghgep", help="Model to train")
     parser.add_argument("--data", type=str, default="mnist", help="Data directory")
     parser.add_argument(
         "--objective", type=str, default="cca", help="Objective function"

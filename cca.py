@@ -53,12 +53,14 @@ class Tracker:
 
 class GHGEP(Tracker, CCAEigenGame):
     def grads(self, views, u=None):
+        #Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         if self.previous_views is None:
             self.previous_views = views
         projections = self.projections(self.previous_views, u)
         Bw = self._Bw(self.previous_views, projections, u)
         projections = self.projections(views, u)
         Aw = self._Aw(views, projections)
+        self.previous_views = views
         wBw = u.T @ Bw
         wAw = u.T @ Aw
         grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)

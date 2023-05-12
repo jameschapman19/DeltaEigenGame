@@ -14,10 +14,10 @@ sns.set_context("paper", font_scale=1.5)
 PROJECT = "GEP-GD"
 
 MODEL_TO_TITLE = {
-    "eckhart": "GEP-GD",
-    "eckhartordered": "k-GEP-GD",
-    "delta": r"k-GEP-GD",
-    "subspace": r"GEP-GD",
+    "eckhart": "EYGEP",
+    "eckhartordered": "kEYGEP",
+    "delta": r"kGHGEP",
+    "subspace": r"GHGEP",
     "gha": r"GHA",
     "sgha": "SGHA",
     "gamma": r"$\gamma$" + "-EigenGame",
@@ -26,11 +26,8 @@ MODEL_TO_TITLE = {
 
 # Set order of models in plots
 ORDER = [
-    "GEP-GD",
-    #"Eckhart Ordered",
-    #"k-GEP-GD",
-    #"GEP-GD",
-    #"GHA",
+    "EYGEP",
+    "GHGEP"
     "SGHA",
     r"$\gamma$" + "-EigenGame",
     "Stochastic Power",
@@ -171,7 +168,7 @@ def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
 
 for data in ["mnist", "cifar", "mediamill"]:
     for batch_size in [100]:
-        for lr in [0.0001,0.001, 0.01]:
-            plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=lr)
+        for lr in [0.001, 0.01]:
+            #plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=lr)
             plot_pcc(data=data, batch_size=batch_size, momentum=0, lr=lr)
 
