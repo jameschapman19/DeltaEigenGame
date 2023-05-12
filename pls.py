@@ -25,7 +25,9 @@ class Tracker:
         )
         self.weights = initializer.fit(views).weights
         self.weights = [weights.astype(np.float32) for weights in self.weights]
-        self.weights = [weight/(2*np.linalg.norm(weight)) for weight in self.weights]
+        self.weights = [
+            weight / (2 * np.linalg.norm(weight)) for weight in self.weights
+        ]
         i = 0
         for e in range(self.epochs):
             for s, sample in enumerate(train_dataloader):
@@ -59,6 +61,7 @@ class Tracker:
         S = np.sign(np.sign(np.diag(R)) + 0.5)
         return Q @ np.diag(S)
 
+
 class StochasticPower(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u)
@@ -74,6 +77,7 @@ class StochasticPower(Tracker, PLSGHAGEP):
         weights = Q @ np.diag(S)
         return weights
 
+
 class GHGEP(Tracker, PLSEigenGame):
     def grads(self, views, u=None):
         if self.previous_views is None:
@@ -86,6 +90,7 @@ class GHGEP(Tracker, PLSEigenGame):
         wAw = u.T @ Aw
         grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
         return -grads
+
 
 class EYGEP(Tracker, PLSEigenGame):
     def grads(self, views, u=None):
@@ -101,6 +106,7 @@ class EYGEP(Tracker, PLSEigenGame):
         wBw_ = u.T @ Bw_
         grads = 2 * Aw - (Bw_ @ wBw + Bw @ wBw_)
         return -grads
+
 
 class SGHA(Tracker, PLSGHAGEP):
     def grads(self, views, u=None):

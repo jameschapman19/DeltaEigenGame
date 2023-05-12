@@ -47,7 +47,7 @@ MODEL_DICT = {
         "gamma": cca.GammaEigenGame,
         "saa": rCCA,
         "ghgep": cca.GHGEP,
-        "eygep": cca.EYGEP
+        "eygep": cca.EYGEP,
     },
     "pls": {
         "sgha": pls.SGHA,
@@ -55,7 +55,7 @@ MODEL_DICT = {
         "sp": pls.StochasticPower,
         "saa": PLS,
         "ghgep": pls.GHGEP,
-        "eygep": pls.EYGEP
+        "eygep": pls.EYGEP,
     },
 }
 

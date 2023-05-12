@@ -8,12 +8,12 @@ from cca_zoo.models._iterative._base import _default_initializer
 
 class Tracker:
     def fit(
-            self,
-            views: Iterable[np.ndarray],
-            y=None,
-            val_views: Iterable[np.ndarray] = None,
-            log_every=1,
-            true=None,
+        self,
+        views: Iterable[np.ndarray],
+        y=None,
+        val_views: Iterable[np.ndarray] = None,
+        log_every=1,
+        true=None,
     ):
         views = self._validate_inputs(views)
         self._check_params()
@@ -51,9 +51,10 @@ class Tracker:
         )
         return tcc.sum()
 
+
 class GHGEP(Tracker, CCAEigenGame):
     def grads(self, views, u=None):
-        #Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
+        # Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         if self.previous_views is None:
             self.previous_views = views
         projections = self.projections(self.previous_views, u)
@@ -65,6 +66,7 @@ class GHGEP(Tracker, CCAEigenGame):
         wAw = u.T @ Aw
         grads = 2 * Aw - (Aw @ wBw + Bw @ wAw)
         return -grads
+
 
 class EYGEP(Tracker, CCAEigenGame):
     def grads(self, views, u=None):
@@ -81,11 +83,13 @@ class EYGEP(Tracker, CCAEigenGame):
         grads = 2 * Aw - (Bw_ @ wBw + Bw @ wBw_)
         return -grads
 
+
 class SGHA(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)
         grads = Aw - Bw @ wAw
         return -grads
+
 
 class GammaEigenGame(Tracker, CCAEigenGame):
     def __init__(self, **kwargs):

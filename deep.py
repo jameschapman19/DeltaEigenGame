@@ -18,20 +18,21 @@ from torch.utils.data import random_split
 
 WANDB_START_METHOD = "thread"
 defaults = dict(
-    data='SplitMNIST',
-    mnist_type='MNIST',
+    data="SplitMNIST",
+    mnist_type="MNIST",
     lr=0.01,
     batch_size=100,
     latent_dims=50,
     epochs=50,
-    model='DCCAEY',
-    architecture='nonlinear',
+    model="DCCAEY",
+    architecture="nonlinear",
     rho=0.1,
     random_seed=1,
-    optimizer='adam',
-    project='DeepDeltaEigenGame',
+    optimizer="adam",
+    project="DeepDeltaEigenGame",
     num_workers=4,
 )
+
 
 class DCCA_EY(DCCA_EigenGame):
     """
@@ -92,6 +93,7 @@ class DCCA_EY(DCCA_EigenGame):
             "penalties": penalties,
         }
 
+
 class DCCA_GH(DCCA_EY):
     def loss(self, views, views2=None, **kwargs):
         z = self(views)
@@ -111,32 +113,39 @@ class DCCA_GH(DCCA_EY):
 
 
 MODEL_DICT = {
-    'DCCA': DCCA,
-    'DCCAEY': DCCA_EY,
-    'DCCAGH': DCCA_GH,
-    'DCCANOI': DCCA_NOI,
+    "DCCA": DCCA,
+    "DCCAEY": DCCA_EY,
+    "DCCAGH": DCCA_GH,
+    "DCCANOI": DCCA_NOI,
 }
 
-if __name__ == '__main__':
-    wandb.init(config=defaults, project='DeepDeltaEigenGame')
+if __name__ == "__main__":
+    wandb.init(config=defaults, project="DeepDeltaEigenGame")
     config = wandb.config
     seed_everything(config.random_seed)
-    wandb_logger = WandbLogger(
-    )
-    if config.data == 'XRMB':
+    wandb_logger = WandbLogger()
+    if config.data == "XRMB":
         feature_size = [273, 112]
         train_dataset = XRMB(root=os.getcwd(), train=True, download=False)
         test_dataset = XRMB(root=os.getcwd(), train=False, download=False)
-    elif config.data == 'SplitMNIST':
+    elif config.data == "SplitMNIST":
         feature_size = [392, 392]
-        train_dataset = SplitMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False)
-        test_dataset = SplitMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False)
-    elif config.data == 'NoisyMNIST':
+        train_dataset = SplitMNIST(
+            root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False
+        )
+        test_dataset = SplitMNIST(
+            root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False
+        )
+    elif config.data == "NoisyMNIST":
         feature_size = [784, 784]
-        train_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False)
-        test_dataset = NoisyMNIST(root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False)
+        train_dataset = NoisyMNIST(
+            root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=False
+        )
+        test_dataset = NoisyMNIST(
+            root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=False
+        )
     else:
-        raise ValueError('dataset not supported')
+        raise ValueError("dataset not supported")
     n_train = int(0.8 * len(train_dataset))
     n_val = len(train_dataset) - n_train
     train_dataset, val_dataset = random_split(train_dataset, (n_train, n_val))
@@ -144,40 +153,77 @@ if __name__ == '__main__':
         persistent_workers = False
     else:
         persistent_workers = True
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
-                                               num_workers=config.num_workers, pin_memory=True,
-                                               persistent_workers=persistent_workers)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False,
-                                             num_workers=config.num_workers,
-                                             pin_memory=True, persistent_workers=persistent_workers)
-    if config.architecture == 'linear':
-        encoder_1 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[0])
-        encoder_2 = architectures.LinearEncoder(latent_dims=config.latent_dims, feature_size=feature_size[1])
-    elif config.architecture == 'nonlinear':
-        encoder_1 = architectures.Encoder(latent_dims=config.latent_dims, layer_sizes=(800, 800),
-                                          feature_size=feature_size[0])
-        encoder_2 = architectures.Encoder(latent_dims=config.latent_dims, layer_sizes=(800, 800),
-                                          feature_size=feature_size[1])
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers,
+        pin_memory=True,
+        persistent_workers=persistent_workers,
+    )
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers,
+        pin_memory=True,
+        persistent_workers=persistent_workers,
+    )
+    if config.architecture == "linear":
+        encoder_1 = architectures.LinearEncoder(
+            latent_dims=config.latent_dims, feature_size=feature_size[0]
+        )
+        encoder_2 = architectures.LinearEncoder(
+            latent_dims=config.latent_dims, feature_size=feature_size[1]
+        )
+    elif config.architecture == "nonlinear":
+        encoder_1 = architectures.Encoder(
+            latent_dims=config.latent_dims,
+            layer_sizes=(800, 800),
+            feature_size=feature_size[0],
+        )
+        encoder_2 = architectures.Encoder(
+            latent_dims=config.latent_dims,
+            layer_sizes=(800, 800),
+            feature_size=feature_size[1],
+        )
     else:
-        raise ValueError('architecture not supported')
-    if config.model == 'DCCANOI':
-        dcca = DCCA_NOI(latent_dims=config.latent_dims, N=len(train_dataset), encoders=[encoder_1, encoder_2],
-                        lr=config.lr, rho=config.rho, optimizer=config.optimizer)
-    elif config.model == 'DCCA':
-        dcca = DCCA(latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2],
-                    lr=config.lr, rho=config.rho, optimizer=config.optimizer, objective=CCA)
+        raise ValueError("architecture not supported")
+    if config.model == "DCCANOI":
+        dcca = DCCA_NOI(
+            latent_dims=config.latent_dims,
+            N=len(train_dataset),
+            encoders=[encoder_1, encoder_2],
+            lr=config.lr,
+            rho=config.rho,
+            optimizer=config.optimizer,
+        )
+    elif config.model == "DCCA":
+        dcca = DCCA(
+            latent_dims=config.latent_dims,
+            encoders=[encoder_1, encoder_2],
+            lr=config.lr,
+            rho=config.rho,
+            optimizer=config.optimizer,
+            objective=CCA,
+        )
     else:
-        dcca = MODEL_DICT[config.model](latent_dims=config.latent_dims, encoders=[encoder_1, encoder_2], lr=config.lr,
-                                        optimizer=config.optimizer)
+        dcca = MODEL_DICT[config.model](
+            latent_dims=config.latent_dims,
+            encoders=[encoder_1, encoder_2],
+            lr=config.lr,
+            optimizer=config.optimizer,
+        )
     trainer = pl.Trainer(
         max_epochs=config.epochs,
         logger=wandb_logger,
         gpus=device_count(),
-        default_root_dir=os.path.join(os.getcwd(), config.model, f"{config.batch_size}",
-                                      f"{config.lr}"),
+        default_root_dir=os.path.join(
+            os.getcwd(), config.model, f"{config.batch_size}", f"{config.lr}"
+        ),
         enable_checkpointing=False,
         log_every_n_steps=1000,
-        accelerator='gpu',
+        accelerator="gpu",
         enable_progress_bar=False,
     )
     trainer.fit(dcca, train_loader, val_loader)

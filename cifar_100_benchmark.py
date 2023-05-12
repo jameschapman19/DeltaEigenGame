@@ -98,6 +98,8 @@ from lightly.utils.benchmarking import BenchmarkModule
 
 import torch
 import torch.distributed as dist
+
+
 class GEPGDLoss(torch.nn.Module):
     """Implementation of the GEPGD Loss from GEPGD[0] paper.
     This code specifically implements the Figure Algorithm 1 from [0].
@@ -150,7 +152,10 @@ class GEPGDLoss(torch.nn.Module):
 
         A = torch.einsum("bi, bj -> ij", z_a, z_b) / N
 
-        B = (torch.einsum("bi, bj -> ij", z_a, z_a) / N + torch.einsum("bi, bj -> ij", z_b, z_b) / N) / 2
+        B = (
+            torch.einsum("bi, bj -> ij", z_a, z_a) / N
+            + torch.einsum("bi, bj -> ij", z_b, z_b) / N
+        ) / 2
 
         A = A + B
 
@@ -163,7 +168,8 @@ class GEPGDLoss(torch.nn.Module):
                 dist.all_reduce(A)
                 dist.all_reduce(B)
 
-        return -torch.trace(2*A - B@B)/D
+        return -torch.trace(2 * A - B @ B) / D
+
 
 logs_root_dir = os.path.join(os.getcwd(), "benchmark_logs")
 
@@ -210,7 +216,7 @@ path_to_train = "/cluster/project9/CCA_public/data/CIFAR100"
 path_to_test = "/cluster/project9/CCA_public/data/CIFAR100"
 
 if not os.path.exists(path_to_train):
-    path_to_train= "C:/Users/chapm/archive/CIFAR100"
+    path_to_train = "C:/Users/chapm/archive/CIFAR100"
     path_to_test = "C:/Users/chapm/archive/CIFAR100"
 
 # Collate function init
@@ -277,9 +283,13 @@ test_dataset = torchvision.datasets.CIFAR100(root=path_to_test, train=False)
 # we use test transformations for getting the feature for kNN on train data
 
 
-dataset_train_kNN = LightlyDataset.from_torch_dataset(dataset, transform=test_transforms)
+dataset_train_kNN = LightlyDataset.from_torch_dataset(
+    dataset, transform=test_transforms
+)
 
-dataset_test = LightlyDataset.from_torch_dataset(test_dataset, transform=test_transforms)
+dataset_test = LightlyDataset.from_torch_dataset(
+    test_dataset, transform=test_transforms
+)
 
 
 def create_dataset_train_ssl(model):
@@ -505,6 +515,7 @@ class FastSiamModel(SimSiamModel):
         self.log("train_loss_ssl", loss)
         return loss
 
+
 class GEPGDModel(BenchmarkModule):
     def __init__(self, dataloader_kNN, num_classes):
         super().__init__(dataloader_kNN, num_classes)
@@ -542,6 +553,7 @@ class GEPGDModel(BenchmarkModule):
         )
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim, max_epochs)
         return [optim], [scheduler]
+
 
 class BarlowTwinsModel(BenchmarkModule):
     def __init__(self, dataloader_kNN, num_classes):

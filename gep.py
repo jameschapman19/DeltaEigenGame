@@ -75,9 +75,7 @@ class GEPSolver:
         Bw = B @ u
         wAw = u.T @ Aw
         wBw = u.T @ Bw
-        obj = (
-            -2 * np.trace(2*wAw-wAw@wBw)
-        )
+        obj = -2 * np.trace(2 * wAw - wAw @ wBw)
         return obj
 
     def backtracking_line_search(self, A, B, u, grads):
@@ -139,7 +137,11 @@ def main():
         A, B, u=u
     )
     delta_line = GEPSolver(
-        method="delta", momentum=momentum, components=components, line_search=True, learning_rate=1
+        method="delta",
+        momentum=momentum,
+        components=components,
+        line_search=True,
+        learning_rate=1,
     ).fit(A, B, u=u)
     # deltaso = GEPSolver(method="deltaso", momentum=momentum, components=components).fit(A, B, u=u)
     # GHAGEP versions
