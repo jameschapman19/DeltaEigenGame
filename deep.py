@@ -78,18 +78,8 @@ class DCCA_EY(DCCA_EigenGame):
     #     return loss["objective"]
 
     def get_AB(self, z):
-        # sum the pairwise covariances between each z and all other zs
-        A = torch.zeros(self.latent_dims, self.latent_dims, device=z[0].device)
-        B = torch.zeros(self.latent_dims, self.latent_dims, device=z[0].device)
-        for i, zi in enumerate(z):
-            for j, zj in enumerate(z):
-                if i == j:
-                    #B += #torch.cov(zi.T)
-                    B += torch.einsum('ij,ik->jk', zi, zj)/zi.shape[0]
-                # A += torch.cov(torch.hstack((zi, zj)).T)[
-                #      self.latent_dims:, : self.latent_dims
-                #      ]
-                A += torch.einsum('ij,ik->jk', zi, zj)/zi.shape[0]
+        A = torch.cov(torch.hstack((z[0], z[1])).T)
+        B = torch.block_diag(torch.cov(z[0].T), torch.cov(z[1].T))
         return A, B
 
     def loss(self, views, views2=None, **kwargs):

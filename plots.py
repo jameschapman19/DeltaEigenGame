@@ -168,5 +168,5 @@ for data in ["mnist", "cifar", "mediamill"]:
     for batch_size in [100]:
         for lr in [0.001, 0.01]:
             #plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=lr)
-            plot_pcc(data=data, batch_size=batch_size, momentum=0, lr=lr)
+            plot_pcc(data=data, batch_size=batch_size, momentum=0.5, lr=lr)
 
