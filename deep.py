@@ -66,6 +66,7 @@ class DCCA_EY(DCCA_EigenGame):
         if self.val_previous_batch is None:
             self.val_previous_batch = batch
         loss = self.loss(batch["views"], self.val_previous_batch["views"])
+        self.val_previous_batch=batch
         for k, v in loss.items():
             self.log("val/" + k, v)
         return loss["objective"]
