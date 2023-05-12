@@ -20,7 +20,7 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data='SplitMNIST',
     mnist_type='MNIST',
-    lr=0.0001,
+    lr=0.0003,
     batch_size=100,
     latent_dims=50,
     epochs=50,
@@ -84,10 +84,12 @@ class DCCA_EY(DCCA_EigenGame):
         for i, zi in enumerate(z):
             for j, zj in enumerate(z):
                 if i == j:
-                    B += torch.cov(zi.T)
-                A += torch.cov(torch.hstack((zi, zj)).T)[
-                     self.latent_dims:, : self.latent_dims
-                     ]
+                    #B += #torch.cov(zi.T)
+                    B += torch.einsum('ij,ik->jk', zi, zj)/zi.shape[0]
+                # A += torch.cov(torch.hstack((zi, zj)).T)[
+                #      self.latent_dims:, : self.latent_dims
+                #      ]
+                A += torch.einsum('ij,ik->jk', zi, zj)/zi.shape[0]
         return A, B
 
     def loss(self, views, views2=None, **kwargs):
