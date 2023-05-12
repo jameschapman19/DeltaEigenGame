@@ -30,7 +30,7 @@ defaults = dict(
     random_seed=1,
     optimizer='adam',
     project='DeepDeltaEigenGame',
-    num_workers=8,
+    num_workers=0,
 )
 
 
@@ -53,29 +53,29 @@ class DCCA_EY(DCCA_EigenGame):
             z.append(encoder(views[i]))
         return z
 
-    def training_step(self, batch, batch_idx):
-        if self.previous_batch is None:
-            self.previous_batch = batch
-        loss = self.loss(batch["views"], self.previous_batch["views"])
-        self.previous_batch = batch
-        for k, v in loss.items():
-            self.log("train/" + k, v, prog_bar=False)
-        return loss["objective"]
-
-    def validation_step(self, batch, batch_idx):
-        if self.val_previous_batch is None:
-            self.val_previous_batch = batch
-        loss = self.loss(batch["views"], self.val_previous_batch["views"])
-        self.val_previous_batch=batch
-        for k, v in loss.items():
-            self.log("val/" + k, v)
-        return loss["objective"]
-
-    def test_step(self, batch, batch_idx):
-        loss = self.loss(batch["views"])
-        for k, v in loss.items():
-            self.log("test/" + k, v)
-        return loss["objective"]
+    # def training_step(self, batch, batch_idx):
+    #     if self.previous_batch is None:
+    #         self.previous_batch = batch
+    #     loss = self.loss(batch["views"], self.previous_batch["views"])
+    #     self.previous_batch = batch
+    #     for k, v in loss.items():
+    #         self.log("train/" + k, v, prog_bar=False)
+    #     return loss["objective"]
+    #
+    # def validation_step(self, batch, batch_idx):
+    #     if self.val_previous_batch is None:
+    #         self.val_previous_batch = batch
+    #     loss = self.loss(batch["views"], self.val_previous_batch["views"])
+    #     self.val_previous_batch=batch
+    #     for k, v in loss.items():
+    #         self.log("val/" + k, v)
+    #     return loss["objective"]
+    #
+    # def test_step(self, batch, batch_idx):
+    #     loss = self.loss(batch["views"])
+    #     for k, v in loss.items():
+    #         self.log("test/" + k, v)
+    #     return loss["objective"]
 
     def get_AB(self, z):
         # sum the pairwise covariances between each z and all other zs

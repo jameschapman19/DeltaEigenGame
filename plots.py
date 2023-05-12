@@ -11,23 +11,21 @@ import numpy as np
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=1.5)
 
-PROJECT = "GEP-GD"
+PROJECT = "DeltaEigenGame"
 
 MODEL_TO_TITLE = {
-    "eckhart": "EYGEP",
-    "eckhartordered": "kEYGEP",
     "delta": r"kGHGEP",
-    "subspace": r"GHGEP",
-    "gha": r"GHA",
     "sgha": "SGHA",
     "gamma": r"$\gamma$" + "-EigenGame",
     "sp": "Stochastic Power",
+    "ghgep": "GHGEP",
+    "eygep": "EYGEP",
 }
 
 # Set order of models in plots
 ORDER = [
     "EYGEP",
-    "GHGEP"
+    "GHGEP",
     "SGHA",
     r"$\gamma$" + "-EigenGame",
     "Stochastic Power",
