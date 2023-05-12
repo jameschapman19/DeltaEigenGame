@@ -77,11 +77,6 @@ class DCCA_EY(DCCA_EigenGame):
     #         self.log("test/" + k, v)
     #     return loss["objective"]
 
-    def get_AB(self, z):
-        A = torch.cov(torch.hstack((z[0], z[1])).T)
-        B = torch.block_diag(torch.cov(z[0].T), torch.cov(z[1].T))
-        return A, B
-
     def loss(self, views, views2=None, **kwargs):
         z = self(views)
         A, B = self.get_AB(z)
