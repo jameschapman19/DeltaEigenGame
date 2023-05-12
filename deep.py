@@ -30,9 +30,8 @@ defaults = dict(
     random_seed=1,
     optimizer='adam',
     project='DeepDeltaEigenGame',
-    num_workers=0,
+    num_workers=4,
 )
-
 
 class DCCA_EY(DCCA_EigenGame):
     """
@@ -92,7 +91,6 @@ class DCCA_EY(DCCA_EigenGame):
             "rewards": rewards,
             "penalties": penalties,
         }
-
 
 class DCCA_GH(DCCA_EY):
     def loss(self, views, views2=None, **kwargs):
