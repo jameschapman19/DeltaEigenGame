@@ -16,7 +16,6 @@ from pytorch_lightning.loggers import WandbLogger
 from torch.cuda import device_count
 from torch.utils.data import random_split
 
-
 WANDB_START_METHOD = "thread"
 defaults = dict(
     data='SplitMNIST',
@@ -46,6 +45,7 @@ class DCCA_EY(DCCA_EigenGame):
     def __init__(self, latent_dims: int, encoders=None, r: float = 0, **kwargs):
         super().__init__(latent_dims=latent_dims, encoders=encoders, **kwargs)
         self.previous_batch = None
+        self.val_previous_batch = None
 
     def forward(self, views, **kwargs):
         z = []
@@ -56,7 +56,7 @@ class DCCA_EY(DCCA_EigenGame):
     def training_step(self, batch, batch_idx):
         if self.previous_batch is None:
             self.previous_batch = batch
-        loss = self.loss(batch["views"] , self.previous_batch["views"])
+        loss = self.loss(batch["views"], self.previous_batch["views"])
         self.previous_batch = batch
         for k, v in loss.items():
             self.log("train/" + k, v, prog_bar=False)
@@ -85,8 +85,8 @@ class DCCA_EY(DCCA_EigenGame):
                 if i == j:
                     B += torch.cov(zi.T)
                 A += torch.cov(torch.hstack((zi, zj)).T)[
-                    self.latent_dims :, : self.latent_dims
-                ]
+                     self.latent_dims:, : self.latent_dims
+                     ]
         return A, B
 
     def loss(self, views, views2=None, **kwargs):
@@ -105,6 +105,7 @@ class DCCA_EY(DCCA_EigenGame):
             "penalties": penalties,
         }
 
+
 class DCCA_GH(DCCA_EY):
     def loss(self, views, views2=None, **kwargs):
         z = self(views)
@@ -114,14 +115,13 @@ class DCCA_GH(DCCA_EY):
         else:
             z2 = self(views2)
             A2, B2 = self.get_AB(z2)
-        rewards = torch.trace(2*A)
+        rewards = torch.trace(2 * A)
         penalties = torch.trace(A @ B2)
         return {
             "objective": -rewards + penalties,
             "rewards": rewards,
             "penalties": penalties,
         }
-
 
 
 MODEL_DICT = {
