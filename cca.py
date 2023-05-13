@@ -84,6 +84,20 @@ class EYGEP(Tracker, CCAEigenGame):
         return -grads
 
 
+class Simpler(Tracker, CCAEigenGame):
+    def grads(self, views, u=None):
+        if self.previous_views is None:
+            self.previous_views = views
+        projections = self.projections(self.previous_views, u)
+        covs = [np.cov(projection.T) for projection in projections]
+        projections = self.projections(views, u)
+        Bws = [view.T@projection for view, projection in zip(views, projections)]
+        Bws = [Bws[0]@covs[1], Bws[1]@covs[0]]
+        Aw = [views[0].T@projections[1],views[1].T@projections[0]]
+        self.previous_views = views
+        grads = 2*np.vstack(Aw) - 2*np.vstack(Bws)
+        return -grads
+
 class SGHA(Tracker, CCAGHAGEP):
     def grads(self, views, u=None):
         Aw, Bw, wAw, wBw = self._get_terms(views, u, unbiased=True)

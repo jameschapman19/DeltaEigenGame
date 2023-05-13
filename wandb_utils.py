@@ -14,6 +14,7 @@ def get_run_data(ids=None, project=""):
             history = pd.DataFrame(run.history())
             history["model"] = run.config["model"]
             history["lr"] = run.config["lr"]
+            history["batch_size"] = run.config["batch_size"]
             data.append(history)
     data =pd.concat(data).reset_index(drop=True)
     return data

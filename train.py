@@ -17,8 +17,8 @@ def get_arguments():
     )
 
     # Experiment
-    parser.add_argument("--model", type=str, default="ghgep", help="Model to train")
-    parser.add_argument("--data", type=str, default="mnist", help="Data directory")
+    parser.add_argument("--model", type=str, default="simpler", help="Model to train")
+    parser.add_argument("--data", type=str, default="mediamill", help="Data directory")
     parser.add_argument(
         "--objective", type=str, default="cca", help="Objective function"
     )
@@ -30,7 +30,7 @@ def get_arguments():
     # Parameters
     parser.add_argument("--batch_size", type=int, default=100, help="Batch size")
     parser.add_argument("--epochs", type=int, default=1, help="Number of epochs")
-    parser.add_argument("--lr", type=float, default=1e-2, help="Learning rate")
+    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument(
         "--momentum", type=bool, default=0, help="Use Nesterov momentum"
     )
@@ -48,6 +48,7 @@ MODEL_DICT = {
         "saa": rCCA,
         "ghgep": cca.GHGEP,
         "eygep": cca.EYGEP,
+        "simpler": cca.Simpler,
     },
     "pls": {
         "sgha": pls.SGHA,

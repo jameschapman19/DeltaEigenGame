@@ -20,15 +20,15 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data="SplitMNIST",
     mnist_type="MNIST",
-    lr=0.01,
-    batch_size=100,
+    lr=0.005,
+    batch_size=20,
     latent_dims=50,
     epochs=50,
     model="DCCAEY",
     architecture="nonlinear",
     rho=0.1,
     random_seed=1,
-    optimizer="adam",
+    optimizer="sgd",
     project="DeepDeltaEigenGame",
     num_workers=4,
 )
@@ -98,6 +98,8 @@ class DCCA_GH(DCCA_EY):
     def loss(self, views, views2=None, **kwargs):
         z = self(views)
         A, B = self.get_AB(z)
+        #works better for DCCA_GH
+        A=A-B
         if views2 is None:
             B2 = B
         else:

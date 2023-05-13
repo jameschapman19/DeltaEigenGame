@@ -30,13 +30,13 @@ def get_best_runs(
     best_df = summary_df.sort_values(by=[f"val/corr"], ascending=False)
     best_df = best_df.groupby("model").head(1).reset_index(drop=True)
     df = get_run_data(ids=best_df["id"].tolist(), project=PROJECT)
-    return data
+    return df
 
-def plot_all_models(data="SplitMNIST", lr=None):
+def plot_all_models(data="XRMB", lr=None):
     df = get_best_runs(data=data, lr=lr)
-    plot_tcc(df, title=f"{data}_lr_{lr}")
+    plot_tcc(df, title=f"dcca_{data}")
 
-def plot_tcc(run_data, title, data="SplitMNIST", hue="model"):
+def plot_tcc(run_data, title, data="XRMB", hue="model"):
     # map model names to titles
     run_data["model"] = run_data["model"].map(MODEL_TO_TITLE)
     #rename val/corr to Validation TCC
@@ -78,7 +78,8 @@ def plot_ey_lr():
     plt.savefig(f"plots/dcca_lr_experiment.png")
 
 
-plot_ey_lr()
+#plot_ey_lr()
+plot_all_models(data="XRMB")
 
 # for data in ["SplitMNIST", "XRMB"]:
 #     for batch_size in [100]:

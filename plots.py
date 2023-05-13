@@ -128,6 +128,52 @@ def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
     plt.savefig(f"plots/{data}_{batch_size}_pvc_lr_{lr}.png")
 
 
+def plot_minibatch_size_ablation(data="mnist"):
+    id_df, summary_df, config_df = get_summary(project=PROJECT)
+    summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
+    summary_df = summary_df.loc[summary_df["data"] == data]
+    summary_df = summary_df.loc[summary_df["model"] == "eygep"]
+    summary_df = summary_df.loc[summary_df["objective"] == "cca"]
+    summary_df = summary_df.loc[summary_df["momentum"] == 0]
+
+    # get average over random seeds
+    best_df = (
+        summary_df.fillna(np.inf)
+        .groupby(["lr", "momentum", "batch_size"])[f"Train PCC"]
+        .mean()
+        .replace(np.inf, np.nan)
+        .dropna()
+        .reset_index()
+    )
+    best_df = best_df.groupby("lr").head(1).reset_index(drop=True)
+    # get run data for models in summary_df matching best_df
+    summary_df = pd.merge(
+        best_df, summary_df, on=["lr", "momentum"], how="left"
+    )
+    df = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
+    # Change column title _step to samples seen
+    df = df.rename(columns={"_step": "Samples Seen"})
+    # map model names to titles
+    df["model"] = df["model"].map(MODEL_TO_TITLE)
+    df = df.rename(columns={"batch_size": "batch size"})
+    plt.figure()
+    sns.lineplot(
+        data=df,
+        x="Samples Seen",
+        y="Train PCC",
+        hue="batch size",
+    )
+    plt.title(
+        rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
+    )
+    plt.savefig(f"plots/{data}_minibatch_size_ablation.png")
+
+plot_minibatch_size_ablation("mediamill")
+plot_minibatch_size_ablation("cifar")
+
+
+
+
 for data in ["mnist", "cifar", "mediamill"]:
     for batch_size in [100]:
         for lr in [0.001, 0.01]:
