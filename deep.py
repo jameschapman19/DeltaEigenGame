@@ -20,17 +20,17 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data="SplitMNIST",
     mnist_type="MNIST",
-    lr=0.005,
+    lr=0.001,
     batch_size=20,
     latent_dims=50,
     epochs=50,
-    model="DCCAEY",
+    model="DCCASimpler",
     architecture="nonlinear",
     rho=0.1,
     random_seed=1,
-    optimizer="sgd",
+    optimizer="adam",
     project="DeepDeltaEigenGame",
-    num_workers=4,
+    num_workers=0,
 )
 
 
@@ -113,12 +113,25 @@ class DCCA_GH(DCCA_EY):
             "penalties": penalties,
         }
 
+class DCCA_Simpler(DCCA):
+    def loss(self, views, views2=None, **kwargs):
+        z = self(views)
+        rewards=2*torch.trace(z[0].T@z[1])
+        penalties=torch.trace(z[0].T@z[0]@z[1].T@z[1])
+        return {
+            "objective": -rewards + penalties,
+            "rewards": rewards,
+            "penalties": penalties,
+        }
+
+
 
 MODEL_DICT = {
     "DCCA": DCCA,
     "DCCAEY": DCCA_EY,
     "DCCAGH": DCCA_GH,
     "DCCANOI": DCCA_NOI,
+    "DCCASimpler": DCCA_Simpler,
 }
 
 if __name__ == "__main__":
