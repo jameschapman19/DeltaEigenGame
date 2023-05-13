@@ -116,8 +116,8 @@ class DCCA_GH(DCCA_EY):
 class DCCA_Simpler(DCCA):
     def loss(self, views, views2=None, **kwargs):
         z = self(views)
-        rewards=2*torch.trace(z[0].T@z[1])
-        penalties=torch.trace(z[0].T@z[0]@z[1].T@z[1])
+        rewards=2*torch.trace(torch.cov(torch.hstack((z[0],z[1])).T)[:self.latent_dims,self.latent_dims:])
+        penalties=torch.trace(torch.cov(z[0].T)@torch.cov(z[1].T))
         return {
             "objective": -rewards + penalties,
             "rewards": rewards,
