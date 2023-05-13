@@ -20,14 +20,16 @@ MODEL_TO_TITLE = {
     "sgha": "SGHA",
     "gamma": r"$\gamma$" + "-EigenGame",
     "sp": "Stochastic Power",
-    "ghgep": "GHGEP",
-    "eygep": "EYGEP",
+    "ghgep": "GH-GEP",
+    "eygep": "EY-GEP",
+    "simpler": "Simpler-GEP",
 }
 
 # Set order of models in plots
 ORDER = [
-    "EYGEP",
-    "GHGEP",
+    "Simpler-GEP"
+    "EY-GEP",
+    "GH-GEP",
     "SGHA",
     r"$\gamma$" + "-EigenGame",
     "Stochastic Power",
@@ -168,13 +170,13 @@ def plot_minibatch_size_ablation(data="mnist"):
     )
     plt.savefig(f"plots/{data}_minibatch_size_ablation.png")
 
-plot_minibatch_size_ablation("mediamill")
-plot_minibatch_size_ablation("cifar")
+# plot_minibatch_size_ablation("mediamill")
+# plot_minibatch_size_ablation("cifar")
 
 
 
 
-for data in ["mnist", "cifar", "mediamill"]:
+for data in [ "cifar", "mediamill"]:
     for batch_size in [100]:
         for lr in [0.001, 0.01]:
             # plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=lr)
