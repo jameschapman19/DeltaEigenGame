@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-
+import numpy as np
 from wandb_utils import get_summary, get_run_data
 
 PROJECT = "DeepDeltaEigenGame"
@@ -14,10 +14,10 @@ MODEL_TO_TITLE = {
     "DCCAGH": "DCCA-GH",
     "DCCANOI": "DCCA-NOI",
     "DCCA": "DCCA-STOL-100",
-    "DCCASimpler": "DCCA-Simpler"
+    "DCCASimpler": "DCCA-SVD"
 }
 
-ORDER = ["DCCA-Simpler","DCCA-EY", "DCCA-GH", "DCCA-NOI", "DCCA-STOL-100"]
+ORDER = ["DCCA-EY","DCCA-SVD", "DCCA-NOI", "DCCA-STOL-100"]
 
 
 def get_best_runs(
@@ -58,6 +58,8 @@ def plot_simpler_lr():
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df["data"] == 'SplitMNIST']
+    # batch size 100
+    summary_df = summary_df.loc[summary_df["batch_size"] == 100]
     #For DCCAEY get all runs
     summary_df = summary_df.loc[summary_df["model"] == "DCCASimpler"]
     run_data = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
@@ -75,10 +77,47 @@ def plot_simpler_lr():
     )
 
 
-    plt.title('Top 50 DCCA on Split MNIST For DCCA-Simpler With\n Different Learning Rates', wrap=True)
+    plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With\n Different Learning Rates', wrap=True)
     plt.savefig(f"plots/dcca_lr_experiment.png")
 
+def plot_minibatch_size_ablation(data="mnist"):
+    id_df, summary_df, config_df = get_summary(project=PROJECT)
+    summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
+    summary_df = summary_df.loc[summary_df["data"] == data]
+    summary_df = summary_df.loc[summary_df["model"] == "DCCASimpler"]
 
+    # get average over random seeds
+    best_df = (
+        summary_df.fillna(np.inf)
+        .groupby(["lr", "batch_size"])[f"val/corr"]
+        .mean()
+        .replace(np.inf, np.nan)
+        .dropna()
+        .reset_index()
+    )
+    best_df = best_df.groupby("batch_size").head(1).reset_index(drop=True)
+    # get run data for models in summary_df matching best_df
+    summary_df = pd.merge(
+        best_df, summary_df, on=["lr", "batch_size"], how="left"
+    )
+    df = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
+    # Change column title _step to samples seen
+    df = df.rename(columns={"_step": "Samples Seen"})
+    # map model names to titles
+    df["model"] = df["model"].map(MODEL_TO_TITLE)
+    df = df.rename(columns={"batch_size": "batch size"})
+    df = df.rename(columns={"val/corr": "Validation TCC"})
+    plt.figure()
+    sns.lineplot(
+        data=df,
+        x="epoch",
+        y="Validation TCC",
+        hue="batch size",
+    )
+    plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With\n Different Batch Sizes', wrap=True)
+    plt.savefig(f"plots/deep_{data}_minibatch_size_ablation.png")
+
+plot_minibatch_size_ablation("SplitMNIST")
 plot_simpler_lr()
 plot_all_models(data="XRMB")
 

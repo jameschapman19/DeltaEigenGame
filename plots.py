@@ -22,14 +22,14 @@ MODEL_TO_TITLE = {
     "sp": "Stochastic Power",
     "ghgep": "GH-GEP",
     "eygep": "EY-GEP",
-    "simpler": "Simpler-GEP",
+    "simpler": "CCA-SVD",
 }
 
 # Set order of models in plots
 ORDER = [
-    "Simpler-GEP",
     "EY-GEP",
-    "GH-GEP",
+    "CCA-SVD",
+    #"GH-GEP",
     "SGHA",
     r"$\gamma$" + "-EigenGame",
     "Stochastic Power",
