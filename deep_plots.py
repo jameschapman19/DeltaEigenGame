@@ -14,9 +14,10 @@ MODEL_TO_TITLE = {
     "DCCAGH": "DCCA-GH",
     "DCCANOI": "DCCA-NOI",
     "DCCA": "DCCA-STOL-100",
+    "DCCASimpler": "DCCA-Simpler"
 }
 
-ORDER = ["DCCA-EY", "DCCA-GH", "DCCA-NOI", "DCCA-STOL-100"]
+ORDER = ["DCCA-Simpler","DCCA-EY", "DCCA-GH", "DCCA-NOI", "DCCA-STOL-100"]
 
 
 def get_best_runs(
@@ -53,12 +54,12 @@ def plot_tcc(run_data, title, data="XRMB", hue="model"):
     plt.savefig(f"plots/{title}.png")
 
 
-def plot_ey_lr():
+def plot_simpler_lr():
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df["data"] == 'SplitMNIST']
     #For DCCAEY get all runs
-    summary_df = summary_df.loc[summary_df["model"] == "DCCAEY"]
+    summary_df = summary_df.loc[summary_df["model"] == "DCCASimpler"]
     run_data = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
     # map model names to titles
     run_data["model"] = run_data["model"].map(MODEL_TO_TITLE)
@@ -74,11 +75,11 @@ def plot_ey_lr():
     )
 
 
-    plt.title('Top 50 DCCA on Split MNIST For DCCA-EY With\n Different Learning Rates', wrap=True)
+    plt.title('Top 50 DCCA on Split MNIST For DCCA-Simpler With\n Different Learning Rates', wrap=True)
     plt.savefig(f"plots/dcca_lr_experiment.png")
 
 
-#plot_ey_lr()
+plot_simpler_lr()
 plot_all_models(data="XRMB")
 
 # for data in ["SplitMNIST", "XRMB"]:

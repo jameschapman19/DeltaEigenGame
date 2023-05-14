@@ -27,7 +27,7 @@ MODEL_TO_TITLE = {
 
 # Set order of models in plots
 ORDER = [
-    "Simpler-GEP"
+    "Simpler-GEP",
     "EY-GEP",
     "GH-GEP",
     "SGHA",
@@ -44,7 +44,7 @@ DIMENSIONS = {
 
 
 def get_best_runs(
-    data="mnist", batch_size=100, objective="PCC", mode="Train", momentum=0.9, lr=None
+    data="mnist", batch_size=100, objective="PCC", mode="Train", momentum=0, lr=None
 ):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
@@ -80,7 +80,7 @@ def get_best_runs(
     return df
 
 
-def plot_pcc(data="mnist", batch_size=100, momentum=0.9, lr=None):
+def plot_pcc(data="mnist", batch_size=100, momentum=0, lr=None):
     # Plot PCC for best runs for each model
     df = get_best_runs(
         data=data,
@@ -106,28 +106,6 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0.9, lr=None):
     if lr is None:
         lr = "tuned"
     plt.savefig(f"plots/{data}_{batch_size}_pcc_lr_{lr}.png")
-
-
-def plot_pvc(data="mnist", batch_size=100, momentum=0.9, lr=None):
-    # Plot PVC for best runs for each model
-    df = get_best_runs(
-        data=data,
-        batch_size=batch_size,
-        objective="PVC",
-        mode="Train",
-        momentum=momentum,
-        lr=lr,
-    )
-    # map model names to titles
-    df["model"] = df["model"].map(MODEL_TO_TITLE)
-    plt.figure()
-    sns.lineplot(data=df, x="Samples Seen", y="Train PVC", hue="model", hue_order=ORDER)
-    plt.title(
-        rf"Top 4 PLS on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
-    )
-    if lr is None:
-        lr = "tuned"
-    plt.savefig(f"plots/{data}_{batch_size}_pvc_lr_{lr}.png")
 
 
 def plot_minibatch_size_ablation(data="mnist"):
@@ -176,8 +154,8 @@ def plot_minibatch_size_ablation(data="mnist"):
 
 
 
-for data in [ "cifar", "mediamill"]:
+for data in [ "mediamill","cifar",]:
     for batch_size in [100]:
-        for lr in [0.001, 0.01]:
+        #for lr in [0.0001,0.001, 0.01]:
             # plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=lr)
-            plot_pcc(data=data, batch_size=batch_size, momentum=0.5, lr=lr)
+        plot_pcc(data=data, batch_size=batch_size, momentum=0)
