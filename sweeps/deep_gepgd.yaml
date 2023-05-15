@@ -8,11 +8,11 @@ project: DeepDeltaEigenGame
 method: grid
 parameters:
   data:
-    values: ['XRMB']
+    values: ['SplitMNIST']
   architecture:
     values: ['nonlinear']
   batch_size:
-    values: [20, 5]
+    values: [50]
   lr:
     values: [1e-3,5e-4,3e-4,1e-4]
   epochs:

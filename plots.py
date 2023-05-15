@@ -92,7 +92,8 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0, lr=None):
     )
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
-    plt.figure()
+    # figure that is shorter than it is wide
+    plt.figure(figsize=(8, 6))
     sns.lineplot(
         data=df,
         x="Samples Seen",
