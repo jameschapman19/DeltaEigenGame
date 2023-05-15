@@ -80,6 +80,8 @@ class DCCA_EY(DCCA_EigenGame):
     def loss(self, views, views2=None, **kwargs):
         z = self(views)
         A, B = self.get_AB(z)
+        # works better for DCCA_GH
+        A = A - B
         if views2 is None:
             B2 = B
         else:
@@ -128,7 +130,7 @@ class DCCA_Simpler(DCCA):
 
 MODEL_DICT = {
     "DCCA": DCCA,
-    "DCCAEY": DCCA_EY,
+    "DCCAEY_NPSD": DCCA_EY,
     "DCCAGH": DCCA_GH,
     "DCCANOI": DCCA_NOI,
     "DCCASimpler": DCCA_Simpler,

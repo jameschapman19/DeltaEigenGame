@@ -11,7 +11,8 @@ import numpy as np
 from wandb_utils import get_summary, get_run_data
 
 sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=1.5)
+sns.set_context("paper", font_scale=2.0)
+#sns tight layout
 
 PROJECT = "DeltaEigenGame"
 
@@ -21,13 +22,13 @@ MODEL_TO_TITLE = {
     "gamma": r"$\gamma$" + "-EigenGame",
     "sp": "Stochastic Power",
     "ghgep": "GH-GEP",
-    "eygep": "EY-GEP",
+    "eygep": "GEP-EY",
     "simpler": "CCA-SVD",
 }
 
 # Set order of models in plots
 ORDER = [
-    "EY-GEP",
+    "GEP-EY",
     "CCA-SVD",
     #"GH-GEP",
     "SGHA",
@@ -93,7 +94,7 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0, lr=None):
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     # figure that is shorter than it is wide
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(10, 5))
     sns.lineplot(
         data=df,
         x="Samples Seen",
@@ -106,6 +107,7 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0, lr=None):
     )
     if lr is None:
         lr = "tuned"
+    plt.tight_layout()
     plt.savefig(f"plots/{data}_{batch_size}_pcc_lr_{lr}.png")
 
 

@@ -6,7 +6,7 @@ from wandb_utils import get_summary, get_run_data
 
 PROJECT = "DeepDeltaEigenGame"
 
-sns.set_context("paper", font_scale=1.5)
+sns.set_context("paper", font_scale=2.0)
 sns.set_style("whitegrid")
 DASHES = [(0, 0), (2, 2), (2, 2), (2, 2)]
 MODEL_TO_TITLE = {
@@ -42,7 +42,7 @@ def plot_tcc(run_data, title, data="XRMB", hue="model"):
     run_data["model"] = run_data["model"].map(MODEL_TO_TITLE)
     #rename val/corr to Validation TCC
     run_data = run_data.rename(columns={"val/corr": "Validation TCC"})
-    plt.figure()
+    plt.figure(figsize=(10, 5))
     sns.lineplot(
         data=run_data,
         x="epoch",
@@ -50,7 +50,12 @@ def plot_tcc(run_data, title, data="XRMB", hue="model"):
         hue=hue,
         hue_order=ORDER,
     )
+    # x lim 10
+    plt.xlim(0, 20)
+    # tick every 5
+    plt.xticks(np.arange(0, 21, 5))
     plt.title(rf"Top 50 DCCA on {data}")
+    plt.tight_layout()
     plt.savefig(f"plots/{title}.png")
 
 
@@ -67,7 +72,7 @@ def plot_simpler_lr():
     run_data["model"] = run_data["model"].map(MODEL_TO_TITLE)
     # rename val/corr to Validation TCC
     run_data = run_data.rename(columns={"val/corr": "Validation TCC"})
-    plt.figure()
+    plt.figure(figsize=(10, 5))
     sns.lineplot(
         data=run_data,
         x="epoch",
@@ -76,7 +81,11 @@ def plot_simpler_lr():
         hue_order=ORDER,
     )
 
-
+    plt.tight_layout()
+    # x lim 10
+    plt.xlim(0, 20)
+    # tick every 5
+    plt.xticks(np.arange(0, 21, 5))
     plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With\n Different Learning Rates', wrap=True)
     plt.savefig(f"plots/dcca_lr_experiment.png")
 
@@ -107,14 +116,19 @@ def plot_minibatch_size_ablation(data="mnist"):
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     df = df.rename(columns={"batch_size": "batch size"})
     df = df.rename(columns={"val/corr": "Validation TCC"})
-    plt.figure()
+    plt.figure(figsize=(10, 5))
     sns.lineplot(
         data=df,
         x="epoch",
         y="Validation TCC",
         hue="batch size",
     )
+    # x lim 10
+    plt.xlim(0, 20)
+    #tick every 5
+    plt.xticks(np.arange(0, 21, 5))
     plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With\n Different Batch Sizes', wrap=True)
+    plt.tight_layout()
     plt.savefig(f"plots/deep_{data}_minibatch_size_ablation.png")
 
 plot_minibatch_size_ablation("SplitMNIST")
