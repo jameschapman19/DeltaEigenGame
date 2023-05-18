@@ -32,7 +32,7 @@ defaults = dict(
     random_seed=1,
     optimizer="adam",
     project="DeepDeltaEigenGame",
-    num_workers=0,
+    num_workers=8,
 )
 
 
