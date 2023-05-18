@@ -107,6 +107,7 @@ def plot_pcc(data="mnist", batch_size=100, momentum=0, lr=None):
     )
     if lr is None:
         lr = "tuned"
+    plt.ylim(0, 1)
     plt.tight_layout()
     plt.savefig(f"plots/{data}_{batch_size}_pcc_lr_{lr}.png")
 
@@ -139,26 +140,27 @@ def plot_minibatch_size_ablation(data="mnist"):
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     df = df.rename(columns={"batch_size": "batch size"})
-    plt.figure()
+    plt.figure(figsize=(10, 5))
     sns.lineplot(
         data=df,
         x="Samples Seen",
         y="Train PCC",
         hue="batch size",
     )
+    plt.ylim(0, 1)
     plt.title(
         rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
     )
     plt.savefig(f"plots/{data}_minibatch_size_ablation.png")
 
-# plot_minibatch_size_ablation("mediamill")
-# plot_minibatch_size_ablation("cifar")
+plot_minibatch_size_ablation("mediamill")
+plot_minibatch_size_ablation("cifar")
 
 
 
 
-for data in [ "mediamill","cifar",]:
-    for batch_size in [100]:
-        #for lr in [0.0001,0.001, 0.01]:
-            # plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=lr)
-        plot_pcc(data=data, batch_size=batch_size, momentum=0)
+# for data in [ "mediamill","cifar",]:
+#     for batch_size in [100]:
+#         #for lr in [0.0001,0.001, 0.01]:
+#             # plot_pvc(data=data, batch_size=batch_size, momentum=0, lr=lr)
+#         plot_pcc(data=data, batch_size=batch_size, momentum=0)

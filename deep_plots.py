@@ -14,7 +14,8 @@ MODEL_TO_TITLE = {
     "DCCAGH": "DCCA-GH",
     "DCCANOI": "DCCA-NOI",
     "DCCA": "DCCA-STOL-100",
-    "DCCASimpler": "DCCA-SVD"
+    "DCCASimpler": "DCCA-SVD",
+    "DCCAEY_NPSD": "DCCA-EY",
 }
 
 ORDER = ["DCCA-EY","DCCA-SVD", "DCCA-NOI", "DCCA-STOL-100"]
@@ -38,6 +39,8 @@ def plot_all_models(data="XRMB", lr=None):
     plot_tcc(df, title=f"dcca_{data}")
 
 def plot_tcc(run_data, title, data="XRMB", hue="model"):
+    # drop DCCAEY
+    run_data = run_data.loc[run_data["model"] != "DCCAEY"]
     # map model names to titles
     run_data["model"] = run_data["model"].map(MODEL_TO_TITLE)
     #rename val/corr to Validation TCC
@@ -52,6 +55,7 @@ def plot_tcc(run_data, title, data="XRMB", hue="model"):
     )
     # x lim 10
     plt.xlim(0, 20)
+    plt.ylim(0, 50)
     # tick every 5
     plt.xticks(np.arange(0, 21, 5))
     plt.title(rf"Top 50 DCCA on {data}")
@@ -84,9 +88,10 @@ def plot_simpler_lr():
     plt.tight_layout()
     # x lim 10
     plt.xlim(0, 20)
+    plt.ylim(0, 50)
     # tick every 5
     plt.xticks(np.arange(0, 21, 5))
-    plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With\n Different Learning Rates', wrap=True)
+    plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With Different Learning Rates', wrap=True)
     plt.savefig(f"plots/dcca_lr_experiment.png")
 
 def plot_minibatch_size_ablation(data="mnist"):
@@ -125,6 +130,7 @@ def plot_minibatch_size_ablation(data="mnist"):
     )
     # x lim 10
     plt.xlim(0, 20)
+    plt.ylim(0, 50)
     #tick every 5
     plt.xticks(np.arange(0, 21, 5))
     plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With\n Different Batch Sizes', wrap=True)
