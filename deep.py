@@ -31,11 +31,6 @@ class CorrelationCallback(Callback):
         pl_module.log("val/corr", corrs.sum())
         pl_module.log("val/corr_squared", (corrs**2).sum())
 
-    # def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-    #     corrs = pl_module.score(trainer.train_dataloader)
-    #     pl_module.log("train/corr", corrs.sum())
-    #     pl_module.log("train/corr_squared", (corrs**2).sum())
-
 
 WANDB_START_METHOD = "thread"
 defaults = dict(
@@ -137,65 +132,6 @@ class DCCA_EY(DCCA_EigenGame):
         return [CorrelationCallback()]
 
 
-class DCCA_EY_BIASED(DCCA_EY):
-    def training_step(self, batch, batch_idx):
-        if len(self.batch_queue) < 1:
-            self.batch_queue.append(batch)
-            loss = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-            loss_ = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-        else:
-            loss = self.loss(batch["views"])
-            loss_ = self.loss(batch["views"], self.batch_queue[0]["views"])
-        self.batch_queue.append(batch)
-        self.batch_queue.pop(0)
-        for k, v in loss_.items():
-            self.log("train/" + k, v, prog_bar=False)
-        return loss["objective"]
-
-
-class DCCA_EY_SYMMETRIC(DCCA_EY):
-    def loss(self, views, views2=None, **kwargs):
-        z = self(views)
-        A, B = self.get_AB(z)
-        if views2 is None:
-            rewards = torch.trace(2 * A)
-            penalties = torch.trace(B @ B)
-        else:
-            z2 = self(views2)
-            A_, B_ = self.get_AB(z2)
-            rewards = torch.trace(A + A_)
-            penalties = torch.trace(B @ B_)
-        return {
-            "objective": -rewards + penalties,
-            "rewards": rewards,
-            "penalties": penalties,
-        }
-
-
-class DCCA_EY_SYMMETRIC_BIASED(DCCA_EY_SYMMETRIC):
-    def training_step(self, batch, batch_idx):
-        if len(self.batch_queue) < 1:
-            self.batch_queue.append(batch)
-            loss = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-            loss_ = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-        else:
-            loss = self.loss(batch["views"])
-            loss_ = self.loss(batch["views"], self.batch_queue[0]["views"])
-        self.batch_queue.append(batch)
-        self.batch_queue.pop(0)
-        for k, v in loss_.items():
-            self.log("train/" + k, v, prog_bar=False)
-        return loss["objective"]
-
-
 class DCCA_SVD(DCCA_EY):
     def loss(self, views, views2=None, **kwargs):
         z = self(views)
@@ -216,57 +152,12 @@ class DCCA_SVD(DCCA_EY):
         }
 
 
-class DCCA_SVD_BIASED(DCCA_SVD):
-    def training_step(self, batch, batch_idx):
-        if len(self.batch_queue) < 1:
-            self.batch_queue.append(batch)
-            loss = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-            loss_ = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-        else:
-            loss = self.loss(batch["views"])
-            loss_ = self.loss(batch["views"], self.batch_queue[0]["views"])
-        self.batch_queue.append(batch)
-        self.batch_queue.pop(0)
-        for k, v in loss_.items():
-            self.log("train/" + k, v, prog_bar=False)
-        return loss["objective"]
-
-
-class DCCA_BT(DCCA_EY):
-    def loss(self, views, **kwargs):
-        z = self(views)
-        # batchnorm the outputs z
-        bn = [
-            torch.nn.BatchNorm1d(self.latent_dims, affine=False).to(z[0].device)
-            for _ in z
-        ]
-        z = [bn_(z_) for bn_, z_ in zip(bn, z)]
-        corr = torch.einsum("bi, bj -> ij", z[0], z[1]) / z[0].shape[0]
-
-        diag = torch.eye(self.latent_dims, device=corr.device)
-        cdif = (corr - diag).pow(2)
-        lamb = 5e-3
-        cdif[~diag.bool()] *= lamb
-        loss = cdif.sum()
-        return {
-            "objective": loss,
-        }
-
 
 MODEL_DICT = {
     "DCCA": DCCA,
     "DCCANOI": DCCA_NOI,
-    "DCCABT": DCCA_BT,
     "DCCAEY": DCCA_EY,
     "DCCASVD": DCCA_SVD,
-    "DCCAEY_BIASED": DCCA_EY_BIASED,
-    "DCCASVD_BIASED": DCCA_SVD_BIASED,
-    "DCCAEY_SYMMETRIC": DCCA_EY_SYMMETRIC,
-    "DCCAEY_SYMMETRIC_BIASED": DCCA_EY_SYMMETRIC_BIASED,
 }
 
 if __name__ == "__main__":
@@ -383,20 +274,4 @@ if __name__ == "__main__":
         accelerator="gpu",
         enable_progress_bar=False,
     )
-    if wandb.config.data == "sim":
-        cca = MCCA(latent_dims=wandb.config.latent_dims).fit((X_train, Y_train))
-        corr = cca.score((X_train, Y_train))
-        print(f"CCA train correlation: {corr.sum()}")
-        cca_test = MCCA(latent_dims=wandb.config.latent_dims).fit((X_test, Y_test))
-        corr = cca_test.score((X_test, Y_test))
-        print(f"CCA_test full correlation: {corr.sum()}")
-        corr = cca.score((X_test, Y_test))
-        print(f"CCA_train sum of diagonals correlation: {corr.sum()}")
-        z = cca.transform((X_test, Y_test))
-        corr = MCCA(latent_dims=wandb.config.latent_dims).fit(z).score(z)
-        print(f"CCA_train subspace correlation: {corr.sum()}")
-        z[0] = X_test @ np.random.rand(100, wandb.config.latent_dims)
-        z[1] = Y_test @ np.random.rand(100, wandb.config.latent_dims)
-        corr = MCCA(latent_dims=wandb.config.latent_dims).fit(z).score(z)
-        print(f"CCA_random full correlation: {corr.sum()}")
     trainer.fit(dcca, train_loader, test_loader)
