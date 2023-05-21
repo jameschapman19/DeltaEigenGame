@@ -1,10 +1,8 @@
 import os
 
-import numpy as np
 import pytorch_lightning as pl
 import torch
 import wandb
-from cca_zoo.data.deep import NumpyDataset
 from cca_zoo.deepmodels import (
     DCCA,
     architectures,
@@ -12,46 +10,29 @@ from cca_zoo.deepmodels import (
     DCCA_EigenGame,
 )
 from cca_zoo.deepmodels.objectives import CCA
-from cca_zoo.models import MCCA
 from multiviewdata.torchdatasets import NoisyMNIST, SplitMNIST, XRMB
-from pytorch_lightning import Callback
-from pytorch_lightning import LightningModule, Trainer
+from cca_zoo.data.deep import NumpyDataset
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
-from sklearn.model_selection import train_test_split
 from torch.cuda import device_count
 from torch.utils.data import random_split
-
-
-class CorrelationCallback(Callback):
-    def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: LightningModule
-    ) -> None:
-        corrs = pl_module.score(trainer.val_dataloaders[0])
-        pl_module.log("val/corr", corrs.sum())
-        pl_module.log("val/corr_squared", (corrs**2).sum())
-
-    # def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-    #     corrs = pl_module.score(trainer.train_dataloader)
-    #     pl_module.log("train/corr", corrs.sum())
-    #     pl_module.log("train/corr_squared", (corrs**2).sum())
-
+import numpy as np
 
 WANDB_START_METHOD = "thread"
 defaults = dict(
     data="SplitMNIST",
     mnist_type="MNIST",
-    lr=0.001,
-    batch_size=100,
-    latent_dims=3,
-    epochs=1000,
-    model="DCCASVD_BIASED",
-    architecture="linear",
+    lr=0.0001,
+    batch_size=8,
+    latent_dims=50,
+    epochs=50,
+    model="DCCABT",
+    architecture="nonlinear",
     rho=0.1,
     random_seed=1,
-    optimizer="sgd",
+    optimizer="adam",
     project="DeepDeltaEigenGame",
-    num_workers=0,
+    num_workers=8,
 )
 
 
@@ -75,13 +56,13 @@ class DCCA_EY(DCCA_EigenGame):
         return z
 
     def training_step(self, batch, batch_idx):
-        if len(self.batch_queue) < 1:
+        if len(self.batch_queue) <2:
             self.batch_queue.append(batch)
             loss = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
+                "objective": torch.tensor(0,requires_grad=True,dtype=torch.float32),
             }
         else:
-            loss = self.loss(batch["views"], self.batch_queue[0]["views"])
+            loss = self.loss(batch["views"], self.batch_queue[0]["views"],self.batch_queue[1]["views"])
         self.batch_queue.append(batch)
         self.batch_queue.pop(0)
         for k, v in loss.items():
@@ -89,19 +70,19 @@ class DCCA_EY(DCCA_EigenGame):
         return loss["objective"]
 
     def validation_step(self, batch, batch_idx):
-        if len(self.val_batch_queue) < 1:
+        if len(self.val_batch_queue) < 2:
             self.val_batch_queue.append(batch)
             loss = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
+                "objective": torch.tensor(0, requires_grad=True,dtype=torch.float32),
             }
         else:
-            loss = self.loss(batch["views"], self.val_batch_queue[0]["views"])
+            loss = self.loss(batch["views"], self.val_batch_queue[0]["views"], self.val_batch_queue[1]["views"])
         # add current batch to queue and remove oldest batch
-        self.val_batch_queue.append(batch)
-        self.val_batch_queue.pop(0)
+        self.batch_queue.append(batch)
+        self.batch_queue.pop(0)
         for k, v in loss.items():
             self.log("val/" + k, v)
-        return loss
+        return loss["objective"]
 
     def test_step(self, batch, batch_idx):
         loss = self.loss(batch["views"])
@@ -109,164 +90,95 @@ class DCCA_EY(DCCA_EigenGame):
             self.log("test/" + k, v)
         return loss["objective"]
 
-    def get_AB(self, z):
-        N, D = z[0].size()
-        C = torch.cov(torch.hstack(z).T)
-        A = C[:D, D:] + C[D:, :D]
-        B = C[:D, :D] + C[D:, D:]
-        return A, B
-
-    def loss(self, views, views2=None, **kwargs):
+    def loss(self, views, views2=None, views3=None,  **kwargs):
         z = self(views)
         A, B = self.get_AB(z)
+        # works better for DCCA_GH
+        A = A - B
         if views2 is None:
-            rewards = torch.trace(2 * A)
-            penalties = torch.trace(B @ B)
+            B2 = B
+            B3 = B
         else:
             z2 = self(views2)
-            A_, B_ = self.get_AB(z2)
-            rewards = torch.trace(2 * A)
-            penalties = torch.trace(B @ B_)
+            A2, B2 = self.get_AB(z2)
+            z3 = self(views3)
+            A3, B3 = self.get_AB(z3)
+        rewards = torch.trace(2 * A)
+        penalties = torch.trace(B2@ B3)
         return {
             "objective": -rewards + penalties,
             "rewards": rewards,
             "penalties": penalties,
         }
 
-    def configure_callbacks(self):
-        return [CorrelationCallback()]
+class DCCA_EY_BIASED(DCCA_EigenGame):
+    """
 
+    References
+    ----------
+    Chapman, James, Ana Lawry Aguila, and Lennie Wells. "A Generalized EigenGame with Extensions to Multiview Representation Learning." arXiv preprint arXiv:2211.11323 (2022).
+    """
 
-class DCCA_EY_BIASED(DCCA_EY):
-    def training_step(self, batch, batch_idx):
-        if len(self.batch_queue) < 1:
-            self.batch_queue.append(batch)
-            loss = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-            loss_ = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-        else:
-            loss = self.loss(batch["views"])
-            loss_ = self.loss(batch["views"], self.batch_queue[0]["views"])
-        self.batch_queue.append(batch)
-        self.batch_queue.pop(0)
-        for k, v in loss_.items():
-            self.log("train/" + k, v, prog_bar=False)
-        return loss["objective"]
+    def __init__(self, latent_dims: int, encoders=None, r: float = 0, **kwargs):
+        super().__init__(latent_dims=latent_dims, encoders=encoders, **kwargs)
+        self.batch_queue = []
+        self.val_batch_queue = []
 
+    def forward(self, views, **kwargs):
+        z = []
+        for i, encoder in enumerate(self.encoders):
+            z.append(encoder(views[i]))
+        return z
 
-class DCCA_EY_SYMMETRIC(DCCA_EY):
-    def loss(self, views, views2=None, **kwargs):
-        z = self(views)
-        A, B = self.get_AB(z)
-        if views2 is None:
-            rewards = torch.trace(2 * A)
-            penalties = torch.trace(B @ B)
-        else:
-            z2 = self(views2)
-            A_, B_ = self.get_AB(z2)
-            rewards = torch.trace(A + A_)
-            penalties = torch.trace(B @ B_)
-        return {
-            "objective": -rewards + penalties,
-            "rewards": rewards,
-            "penalties": penalties,
-        }
-
-
-class DCCA_EY_SYMMETRIC_BIASED(DCCA_EY_SYMMETRIC):
-    def training_step(self, batch, batch_idx):
-        if len(self.batch_queue) < 1:
-            self.batch_queue.append(batch)
-            loss = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-            loss_ = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-        else:
-            loss = self.loss(batch["views"])
-            loss_ = self.loss(batch["views"], self.batch_queue[0]["views"])
-        self.batch_queue.append(batch)
-        self.batch_queue.pop(0)
-        for k, v in loss_.items():
-            self.log("train/" + k, v, prog_bar=False)
-        return loss["objective"]
-
-
-class DCCA_SVD(DCCA_EY):
-    def loss(self, views, views2=None, **kwargs):
-        z = self(views)
-        C = torch.cov(torch.hstack(z).T)
-        Cxy = C[: self.latent_dims, self.latent_dims :]
-        Cxx = C[: self.latent_dims, : self.latent_dims]
-        if views2 is None:
-            Cyy = C[self.latent_dims :, self.latent_dims :]
-        else:
-            z2 = self(views2)
-            Cyy = torch.cov(torch.hstack(z2).T)[self.latent_dims :, self.latent_dims :]
-        rewards = torch.trace(2 * Cxy)
-        penalties = torch.trace(Cxx @ Cyy)
-        return {
-            "objective": -rewards + penalties,
-            "rewards": rewards,
-            "penalties": penalties,
-        }
-
-
-class DCCA_SVD_BIASED(DCCA_SVD):
-    def training_step(self, batch, batch_idx):
-        if len(self.batch_queue) < 1:
-            self.batch_queue.append(batch)
-            loss = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-            loss_ = {
-                "objective": torch.tensor(0, requires_grad=True, dtype=torch.float32),
-            }
-        else:
-            loss = self.loss(batch["views"])
-            loss_ = self.loss(batch["views"], self.batch_queue[0]["views"])
-        self.batch_queue.append(batch)
-        self.batch_queue.pop(0)
-        for k, v in loss_.items():
-            self.log("train/" + k, v, prog_bar=False)
-        return loss["objective"]
-
-
-class DCCA_BT(DCCA_EY):
     def loss(self, views, **kwargs):
         z = self(views)
+        A, B = self.get_AB(z)
+        # works better for DCCA_GH
+        A = A - B
+        rewards = torch.trace(2 * A)
+        penalties = torch.trace(B @ B)
+        return {
+            "objective": -rewards + penalties,
+            "rewards": rewards,
+            "penalties": penalties,
+        }
+
+class DCCA_SVD(DCCA_EY):
+    def loss(self,views, views2=None, views3=None, **kwargs):
+        z = self(views)
+        rewards=2*torch.trace(torch.cov(torch.hstack((z[0],z[1])).T)[:self.latent_dims,self.latent_dims:])
+        penalties=torch.trace(torch.cov(z[0].T)@torch.cov(z[1].T))
+        return {
+            "objective": -rewards + penalties,
+            "rewards": rewards,
+            "penalties": penalties,
+        }
+
+class DCCA_BT(DCCA_EY):
+    def loss(self,views, views2=None, views3=None,  **kwargs):
+        z = self(views)
         # batchnorm the outputs z
-        bn = [
-            torch.nn.BatchNorm1d(self.latent_dims, affine=False).to(z[0].device)
-            for _ in z
-        ]
-        z = [bn_(z_) for bn_, z_ in zip(bn, z)]
+        bn = [torch.nn.BatchNorm1d(self.latent_dims, affine=False).to(z[0].device) for _ in z]
+        z = [bn_(z_) for bn_,z_ in zip(bn,z)]
         corr = torch.einsum("bi, bj -> ij", z[0], z[1]) / z[0].shape[0]
 
         diag = torch.eye(self.latent_dims, device=corr.device)
         cdif = (corr - diag).pow(2)
-        lamb = 5e-3
+        lamb=5e-3
         cdif[~diag.bool()] *= lamb
         loss = cdif.sum()
         return {
             "objective": loss,
         }
 
-
 MODEL_DICT = {
     "DCCA": DCCA,
+    "DCCAEYUNBIASED": DCCA_EY,
+    #"DCCAGH": DCCA_GH,
     "DCCANOI": DCCA_NOI,
-    "DCCABT": DCCA_BT,
-    "DCCAEY": DCCA_EY,
     "DCCASVD": DCCA_SVD,
-    "DCCAEY_BIASED": DCCA_EY_BIASED,
-    "DCCASVD_BIASED": DCCA_SVD_BIASED,
-    "DCCAEY_SYMMETRIC": DCCA_EY_SYMMETRIC,
-    "DCCAEY_SYMMETRIC_BIASED": DCCA_EY_SYMMETRIC_BIASED,
+    "DCCABT": DCCA_BT,
+    "DCCAEYBIASED": DCCA_EY_BIASED,
 }
 
 if __name__ == "__main__":
@@ -296,16 +208,17 @@ if __name__ == "__main__":
         )
     elif config.data == "sim":
         feature_size = [100, 100]
-        X = np.random.rand(1000, 100)
-        Y = np.random.rand(1000, 100)
-        # scale data and split into train and test
-        X = (X - X.mean(axis=0)) / X.std(axis=0)
-        Y = (Y - Y.mean(axis=0)) / Y.std(axis=0)
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.5)
-        train_dataset = NumpyDataset((X_train, Y_train))
-        test_dataset = NumpyDataset((X_test, Y_test))
+        train_dataset = NumpyDataset(
+            (np.random.rand(1000, 100), np.random.rand(1000, 100))
+            )
+        test_dataset = NumpyDataset(
+            (np.random.rand(1000, 100), np.random.rand(1000, 100))
+            )
     else:
         raise ValueError("dataset not supported")
+    n_train = int(0.8 * len(train_dataset))
+    n_val = len(train_dataset) - n_train
+    train_dataset, val_dataset = random_split(train_dataset, (n_train, n_val))
     if config.num_workers == 0:
         persistent_workers = False
     else:
@@ -318,8 +231,8 @@ if __name__ == "__main__":
         pin_memory=True,
         persistent_workers=persistent_workers,
     )
-    test_loader = torch.utils.data.DataLoader(
-        test_dataset,
+    val_loader = torch.utils.data.DataLoader(
+        val_dataset,
         batch_size=config.batch_size,
         shuffle=False,
         num_workers=config.num_workers,
@@ -383,20 +296,4 @@ if __name__ == "__main__":
         accelerator="gpu",
         enable_progress_bar=False,
     )
-    if wandb.config.data == "sim":
-        cca = MCCA(latent_dims=wandb.config.latent_dims).fit((X_train, Y_train))
-        corr = cca.score((X_train, Y_train))
-        print(f"CCA train correlation: {corr.sum()}")
-        cca_test = MCCA(latent_dims=wandb.config.latent_dims).fit((X_test, Y_test))
-        corr = cca_test.score((X_test, Y_test))
-        print(f"CCA_test full correlation: {corr.sum()}")
-        corr = cca.score((X_test, Y_test))
-        print(f"CCA_train sum of diagonals correlation: {corr.sum()}")
-        z = cca.transform((X_test, Y_test))
-        corr = MCCA(latent_dims=wandb.config.latent_dims).fit(z).score(z)
-        print(f"CCA_train subspace correlation: {corr.sum()}")
-        z[0] = X_test @ np.random.rand(100, wandb.config.latent_dims)
-        z[1] = Y_test @ np.random.rand(100, wandb.config.latent_dims)
-        corr = MCCA(latent_dims=wandb.config.latent_dims).fit(z).score(z)
-        print(f"CCA_random full correlation: {corr.sum()}")
-    trainer.fit(dcca, train_loader, test_loader)
+    trainer.fit(dcca, train_loader, val_loader)
