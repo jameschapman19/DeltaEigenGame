@@ -10,40 +10,45 @@ sns.set_context("paper", font_scale=2.0)
 sns.set_style("whitegrid")
 DASHES = [(0, 0), (2, 2), (2, 2), (2, 2)]
 MODEL_TO_TITLE = {
-    "DCCAEY": "DCCA-EY",
+    "DCCAEY_NPSD": "DCCA-EY",
     "DCCAGH": "DCCA-GH",
     "DCCANOI": "DCCA-NOI",
     "DCCA": "DCCA-STOL-100",
     "DCCASimpler": "DCCA-SVD",
-    "DCCAEY_NPSD": "DCCA-EY",
+    "DCCABT": "DCCA-BT",
 }
 
-ORDER = ["DCCA-EY","DCCA-SVD", "DCCA-NOI", "DCCA-STOL-100"]
+ORDER = ["DCCA-EY", "DCCA-SVD", "DCCA-BT", "DCCA-NOI", "DCCA-STOL-100"]
 
 
 def get_best_runs(
-    data="SplitMNIST", lr=None
+    data="SplitMNIST",
+    lr=None,
+    batch_size=100,
 ):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df["data"] == data]
     if lr is not None:
         summary_df = summary_df.loc[summary_df["lr"] == lr]
+    summary_df = summary_df.loc[summary_df["batch_size"] == batch_size]
     best_df = summary_df.sort_values(by=[f"val/corr"], ascending=False)
     best_df = best_df.groupby("model").head(1).reset_index(drop=True)
     df = get_run_data(ids=best_df["id"].tolist(), project=PROJECT)
     return df
 
+
 def plot_all_models(data="XRMB", lr=None):
     df = get_best_runs(data=data, lr=lr)
-    plot_tcc(df, title=f"dcca_{data}")
+    plot_tcc(df, title=f"dcca_{data}", data=data, hue="model")
+
 
 def plot_tcc(run_data, title, data="XRMB", hue="model"):
-    # drop DCCAEY
-    run_data = run_data.loc[run_data["model"] != "DCCAEY"]
+    # get only the models in MODEL_TO_TITLE
+    run_data = run_data.loc[run_data["model"].isin(MODEL_TO_TITLE.keys())]
     # map model names to titles
     run_data["model"] = run_data["model"].map(MODEL_TO_TITLE)
-    #rename val/corr to Validation TCC
+    # rename val/corr to Validation TCC
     run_data = run_data.rename(columns={"val/corr": "Validation TCC"})
     plt.figure(figsize=(10, 5))
     sns.lineplot(
@@ -66,10 +71,10 @@ def plot_tcc(run_data, title, data="XRMB", hue="model"):
 def plot_simpler_lr():
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
-    summary_df = summary_df.loc[summary_df["data"] == 'SplitMNIST']
+    summary_df = summary_df.loc[summary_df["data"] == "SplitMNIST"]
     # batch size 100
     summary_df = summary_df.loc[summary_df["batch_size"] == 100]
-    #For DCCAEY get all runs
+    # For DCCAEY get all runs
     summary_df = summary_df.loc[summary_df["model"] == "DCCASimpler"]
     run_data = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
     # map model names to titles
@@ -91,8 +96,12 @@ def plot_simpler_lr():
     plt.ylim(0, 50)
     # tick every 5
     plt.xticks(np.arange(0, 21, 5))
-    plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With Different Learning Rates', wrap=True)
+    plt.title(
+        "Top 50 DCCA on Split MNIST For DCCA-SVD With Different Learning Rates",
+        wrap=True,
+    )
     plt.savefig(f"plots/dcca_lr_experiment.png")
+
 
 def plot_minibatch_size_ablation(data="mnist"):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
@@ -111,9 +120,7 @@ def plot_minibatch_size_ablation(data="mnist"):
     )
     best_df = best_df.groupby("batch_size").head(1).reset_index(drop=True)
     # get run data for models in summary_df matching best_df
-    summary_df = pd.merge(
-        best_df, summary_df, on=["lr", "batch_size"], how="left"
-    )
+    summary_df = pd.merge(best_df, summary_df, on=["lr", "batch_size"], how="left")
     df = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
     # Change column title _step to samples seen
     df = df.rename(columns={"_step": "Samples Seen"})
@@ -131,15 +138,20 @@ def plot_minibatch_size_ablation(data="mnist"):
     # x lim 10
     plt.xlim(0, 20)
     plt.ylim(0, 50)
-    #tick every 5
+    # tick every 5
     plt.xticks(np.arange(0, 21, 5))
-    plt.title('Top 50 DCCA on Split MNIST For DCCA-SVD With\n Different Batch Sizes', wrap=True)
+    plt.title(
+        "Top 50 DCCA on Split MNIST For DCCA-SVD With\n Different Batch Sizes",
+        wrap=True,
+    )
     plt.tight_layout()
     plt.savefig(f"plots/deep_{data}_minibatch_size_ablation.png")
 
-plot_minibatch_size_ablation("SplitMNIST")
-plot_simpler_lr()
+
+# plot_minibatch_size_ablation("SplitMNIST")
+# plot_simpler_lr()
 plot_all_models(data="XRMB")
+plot_all_models(data="SplitMNIST")
 
 # for data in ["SplitMNIST", "XRMB"]:
 #     for batch_size in [100]:

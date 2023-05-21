@@ -78,7 +78,7 @@ class StochasticPower(Tracker, PLSGHAGEP):
         return weights
 
 
-class GHGEP(Tracker, PLSEigenGame):
+class GEPGH(Tracker, PLSEigenGame):
     def grads(self, views, u=None):
         if self.previous_views is None:
             self.previous_views = views
@@ -92,7 +92,7 @@ class GHGEP(Tracker, PLSEigenGame):
         return -grads
 
 
-class EYGEP(Tracker, PLSEigenGame):
+class GEPEY(Tracker, PLSEigenGame):
     def grads(self, views, u=None):
         if self.previous_views is None:
             self.previous_views = views

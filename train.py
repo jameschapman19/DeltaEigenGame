@@ -1,35 +1,45 @@
+# This script trains different models for CCA or PLS objectives on various datasets
+# using Delta-EigenGame algorithm
+
 import argparse
 
 import numpy as np
 from cca_zoo.models import rCCA, PLS
 from scipy.linalg import svdvals
 
-import cca
-import pls
-import wandb
+import cca  # custom module for CCA models
+import pls  # custom module for PLS models
+import wandb  # module for logging and tracking experiments
 
-from data_utils import load_mnist, load_mediamill, load_cifar
+from data_utils import (
+    load_mnist,
+    load_mediamill,
+    load_cifar,
+)  # custom module for loading datasets
 
 
 def get_arguments():
+    # This function parses the command-line arguments and returns a parser object
     parser = argparse.ArgumentParser(
         description="Train Models with Delta-EigenGame", add_help=False
     )
 
     # Experiment
-    parser.add_argument("--model", type=str, default="simpler", help="Model to train")
-    parser.add_argument("--data", type=str, default="mediamill", help="Data directory")
+    parser.add_argument(
+        "--model", type=str, default="gepeybiased", help="Model to train"
+    )
+    parser.add_argument("--data", type=str, default="cifar", help="Data directory")
     parser.add_argument(
         "--objective", type=str, default="cca", help="Objective function"
     )
     parser.add_argument("--seed", type=int, default=5, help="Random seed")
     parser.add_argument(
-        "--components", type=int, default=4, help="Number of components"
+        "--components", type=int, default=10, help="Number of components"
     )
 
     # Parameters
-    parser.add_argument("--batch_size", type=int, default=100, help="Batch size")
-    parser.add_argument("--epochs", type=int, default=1, help="Number of epochs")
+    parser.add_argument("--batch_size", type=int, default=10, help="Batch size")
+    parser.add_argument("--epochs", type=int, default=10, help="Number of epochs")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument(
         "--momentum", type=bool, default=0, help="Use Nesterov momentum"
@@ -46,21 +56,24 @@ MODEL_DICT = {
         "sgha": cca.SGHA,
         "gamma": cca.GammaEigenGame,
         "saa": rCCA,
-        "ghgep": cca.GHGEP,
-        "eygep": cca.EYGEP,
-        "simpler": cca.Simpler,
+        "gepgh": cca.GEPGH,
+        "gepghbiased": cca.GEPGHBiased,
+        "gepey": cca.GEPEY,
+        "gepeybiased": cca.GEPEYBiased,
+        "svd": cca.SVD,
     },
     "pls": {
         "sgha": pls.SGHA,
         "gamma": pls.GammaEigenGame,
         "sp": pls.StochasticPower,
         "saa": PLS,
-        "ghgep": pls.GHGEP,
-        "eygep": pls.EYGEP,
+        "gepgh": pls.GEPGH,
+        "gepey": pls.GEPEY,
     },
 }
 
 
+# This function computes the total variance captured (TVC) by the weights of the views
 def tvc(weights, views):
     z = [view @ weight for view, weight in zip(views, weights)]
     m = z[0].T @ z[1] / (z[0].shape[0] - 1)
@@ -69,6 +82,8 @@ def tvc(weights, views):
 
 def main():
     np.random.seed(wandb.config.seed)
+
+    # Initialize the model based on the objective and model name
     model = MODEL_DICT[wandb.config.objective][wandb.config.model](
         batch_size=wandb.config.batch_size,
         epochs=wandb.config.epochs,
@@ -79,20 +94,33 @@ def main():
         scale=False,
         centre=False,
     )
+
+    # Set the gamma parameter if using GammaEigenGame model
     if wandb.config.model == "gamma":
         model.gamma = wandb.config.gamma
 
+    # Load the data based on the data name
     if wandb.config.data == "synthetic":
         X = np.random.rand(100, 10)
         Y = np.random.rand(100, 10)
         X_test = np.random.rand(100, 10)
         Y_test = np.random.rand(100, 10)
+
     elif wandb.config.data == "cifar":
         X, Y, X_test, Y_test = load_cifar()
+
     elif wandb.config.data == "mnist":
         X, Y, X_test, Y_test = load_mnist()
+
     elif wandb.config.data == "mediamill":
         X, Y, X_test, Y_test = load_mediamill()
+
+    elif wandb.config.data == "synthetic":
+        X = np.random.rand(100, 10)
+        Y = np.random.rand(100, 10)
+        X_test = np.random.rand(100, 10)
+        Y_test = np.random.rand(100, 10)
+
     else:
         raise NotImplementedError
 
@@ -100,8 +128,11 @@ def main():
 
     x_scaler = StandardScaler()
     y_scaler = StandardScaler()
+
+    # Scale the data using standard scaler
     X = x_scaler.fit_transform(X)
     Y = y_scaler.fit_transform(Y)
+
     if X_test is not None:
         X_test = x_scaler.transform(X_test)
         Y_test = y_scaler.transform(Y_test)

@@ -12,7 +12,7 @@ from wandb_utils import get_summary, get_run_data
 
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=2.0)
-#sns tight layout
+# sns tight layout
 
 PROJECT = "DeltaEigenGame"
 
@@ -30,7 +30,7 @@ MODEL_TO_TITLE = {
 ORDER = [
     "GEP-EY",
     "CCA-SVD",
-    #"GH-GEP",
+    # "GH-GEP",
     "SGHA",
     r"$\gamma$" + "-EigenGame",
     "Stochastic Power",
@@ -131,9 +131,7 @@ def plot_minibatch_size_ablation(data="mnist"):
     )
     best_df = best_df.groupby("lr").head(1).reset_index(drop=True)
     # get run data for models in summary_df matching best_df
-    summary_df = pd.merge(
-        best_df, summary_df, on=["lr", "momentum"], how="left"
-    )
+    summary_df = pd.merge(best_df, summary_df, on=["lr", "momentum"], how="left")
     df = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
     # Change column title _step to samples seen
     df = df.rename(columns={"_step": "Samples Seen"})
@@ -153,10 +151,9 @@ def plot_minibatch_size_ablation(data="mnist"):
     )
     plt.savefig(f"plots/{data}_minibatch_size_ablation.png")
 
+
 plot_minibatch_size_ablation("mediamill")
 plot_minibatch_size_ablation("cifar")
-
-
 
 
 # for data in [ "mediamill","cifar",]:
