@@ -3,14 +3,14 @@ import numpy as np
 
 class GEPSolver:
     def __init__(
-        self,
-        learning_rate=1e-5,
-        epochs=200000,
-        components=1,
-        method="eg",
-        return_eigvals=True,
-        line_search=False,
-        momentum=0.0,
+            self,
+            learning_rate=1e-5,
+            epochs=200000,
+            components=1,
+            method="eg",
+            return_eigvals=True,
+            line_search=False,
+            momentum=0.0,
     ):
         self.u = None
         self.learning_rate = learning_rate
@@ -80,9 +80,9 @@ class GEPSolver:
 
     def backtracking_line_search(self, A, B, u, grads):
         while (
-            self.objective(A, B, u - self.learning_rate * grads)
-            > self.objective(A, B, u)
-            - self.rho * self.learning_rate * np.linalg.norm(grads) ** 2
+                self.objective(A, B, u - self.learning_rate * grads)
+                > self.objective(A, B, u)
+                - self.rho * self.learning_rate * np.linalg.norm(grads) ** 2
         ):
             self.learning_rate *= 0.9
         return

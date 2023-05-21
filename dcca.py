@@ -7,13 +7,13 @@ from pytorch_lightning import Callback, LightningModule, Trainer
 # Defining a custom callback to log the correlation metrics
 class CorrelationCallback(Callback):
     def on_validation_epoch_end(
-        self, trainer: Trainer, pl_module: LightningModule
+            self, trainer: Trainer, pl_module: LightningModule
     ) -> None:
         # Computing the correlations for each view pair
         corrs = pl_module.score(trainer.val_dataloaders[0])
         # Logging the sum of correlations and squared correlations
         pl_module.log("val/corr", corrs.sum())
-        pl_module.log("val/corr_squared", (corrs**2).sum())
+        pl_module.log("val/corr_squared", (corrs ** 2).sum())
 
 
 # Defining a subclass of DCCA_EigenGame with a custom loss function
@@ -121,14 +121,14 @@ class DCCA_SVD(DCCA_EY):
         z = self(views)
         C = torch.cov(torch.hstack(z).T)
 
-        Cxy = C[: self.latent_dims, self.latent_dims :]
+        Cxy = C[: self.latent_dims, self.latent_dims:]
         Cxx = C[: self.latent_dims, : self.latent_dims]
 
         if views2 is None:
-            Cyy = C[self.latent_dims :, self.latent_dims :]
+            Cyy = C[self.latent_dims:, self.latent_dims:]
         else:
             z2 = self(views2)
-            Cyy = torch.cov(torch.hstack(z2).T)[self.latent_dims :, self.latent_dims :]
+            Cyy = torch.cov(torch.hstack(z2).T)[self.latent_dims:, self.latent_dims:]
 
         rewards = torch.trace(2 * Cxy)
         penalties = torch.trace(Cxx @ Cyy)

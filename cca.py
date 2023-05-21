@@ -14,12 +14,12 @@ class Tracker:
     # It implements the fit and tcc methods that are common to all the models
 
     def fit(
-        self,
-        views: Iterable[np.ndarray],
-        y=None,
-        val_views: Iterable[np.ndarray] = None,
-        log_every=1,
-        true=None,
+            self,
+            views: Iterable[np.ndarray],
+            y=None,
+            val_views: Iterable[np.ndarray] = None,
+            log_every=1,
+            true=None,
     ):
         # This method trains the model on the given views and logs the results using wandb
 
@@ -49,7 +49,7 @@ class Tracker:
                     )  # log the train TCC using wandb
                     if true is not None:
                         pcc = (
-                            tcc / true["train"]
+                                tcc / true["train"]
                         )  # compute the percentage correlation captured (PCC) on the training views using true values
                         wandb.log(
                             {"Train PCC": pcc}, step=i * self.batch_size
@@ -63,7 +63,7 @@ class Tracker:
                         )  # log the val TCC using wandb
                         if true is not None:
                             pcc = (
-                                tcc / true["val"]
+                                    tcc / true["val"]
                             )  # compute the PCC on the validation views using true values
                             wandb.log(
                                 {"Val PCC": pcc}, step=i * self.batch_size
@@ -113,7 +113,7 @@ class GEPGH(Tracker, CCAEigenGame):
         wAw = u.T @ Aw  # compute wAw term
 
         grads = 2 * Aw - (
-            Aw @ wBw + Bw @ wAw
+                Aw @ wBw + Bw @ wAw
         )  # compute gradients using GEP formula with history term
 
         return -grads

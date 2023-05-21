@@ -8,16 +8,16 @@ project: DeepDeltaEigenGame
 method: grid
 parameters:
   data:
-    values: ['SplitMNIST']
+    values: [ 'SplitMNIST' ]
   architecture:
-    values: ['nonlinear']
+    values: [ 'nonlinear' ]
   batch_size:
-    values: [100,50,20,5 ]
+    values: [ 100,50,20,5 ]
   lr:
-    values: [1e-3,1e-4,1e-5]
+    values: [ 1e-3,1e-4,1e-5 ]
   epochs:
-    values: [50]
+    values: [ 50 ]
   model:
-    values: ['DCCAEYUNBIASED']
+    values: [ 'DCCAEYUNBIASED' ]
   random_seed:
-    values: [1]
+    values: [ 1 ]

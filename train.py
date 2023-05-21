@@ -4,13 +4,12 @@
 import argparse
 
 import numpy as np
+import wandb  # module for logging and tracking experiments
 from cca_zoo.models import rCCA, PLS
 from scipy.linalg import svdvals
 
 import cca  # custom module for CCA models
 import pls  # custom module for PLS models
-import wandb  # module for logging and tracking experiments
-
 from data_utils import (
     load_mnist,
     load_mediamill,

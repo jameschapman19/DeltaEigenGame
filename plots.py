@@ -3,10 +3,9 @@ Generates plots of results from wandb api
 """
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import wandb
-import numpy as np
 
 from wandb_utils import get_summary, get_run_data
 
@@ -36,7 +35,6 @@ ORDER = [
     "Stochastic Power",
 ]
 
-
 DIMENSIONS = {
     "mnist": (392, 392),
     "cifar": (1536, 1536),
@@ -45,7 +43,7 @@ DIMENSIONS = {
 
 
 def get_best_runs(
-    data="mnist", batch_size=100, objective="PCC", mode="Train", momentum=0, lr=None
+        data="mnist", batch_size=100, objective="PCC", mode="Train", momentum=0, lr=None
 ):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
@@ -154,7 +152,6 @@ def plot_minibatch_size_ablation(data="mnist"):
 
 plot_minibatch_size_ablation("mediamill")
 plot_minibatch_size_ablation("cifar")
-
 
 # for data in [ "mediamill","cifar",]:
 #     for batch_size in [100]:

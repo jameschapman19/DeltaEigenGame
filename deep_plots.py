@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
-import numpy as np
+
 from wandb_utils import get_summary, get_run_data
 
 PROJECT = "DeepDeltaEigenGame"
@@ -22,9 +23,9 @@ ORDER = ["DCCA-EY", "DCCA-SVD", "DCCA-BT", "DCCA-NOI", "DCCA-STOL-100"]
 
 
 def get_best_runs(
-    data="SplitMNIST",
-    lr=None,
-    batch_size=100,
+        data="SplitMNIST",
+        lr=None,
+        batch_size=100,
 ):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)

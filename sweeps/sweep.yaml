@@ -41,9 +41,9 @@ parameters:
       - 10
   lr:
     values:
-        - 0.01
-        - 0.001
-        - 0.0001
+      - 0.01
+      - 0.001
+      - 0.0001
   momentum:
     values:
       - 0

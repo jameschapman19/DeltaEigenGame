@@ -2,20 +2,19 @@ from typing import Iterable
 
 import numpy as np
 import scipy.linalg
+import wandb
 from cca_zoo.models import PLSEigenGame, PLSGHAGEP
 from cca_zoo.models._iterative._base import _default_initializer
-
-import wandb
 
 
 class Tracker:
     def fit(
-        self,
-        views: Iterable[np.ndarray],
-        y=None,
-        val_views: Iterable[np.ndarray] = None,
-        log_every=1,
-        true=None,
+            self,
+            views: Iterable[np.ndarray],
+            y=None,
+            val_views: Iterable[np.ndarray] = None,
+            log_every=1,
+            true=None,
     ):
         views = self._validate_inputs(views)
         self._check_params()
@@ -51,7 +50,7 @@ class Tracker:
     def tvc(self, views, u):
         z = [view @ w for view, w in zip(views, u)]
         s = scipy.linalg.svdvals(
-            np.cov(*z, rowvar=False)[0 : self.latent_dims, self.latent_dims :]
+            np.cov(*z, rowvar=False)[0: self.latent_dims, self.latent_dims:]
         )
         return s.sum()
 

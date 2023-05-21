@@ -1,8 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 import wandb
-import numpy as np
 
 
 def get_run_data(ids=None, project=""):

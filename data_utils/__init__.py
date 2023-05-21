@@ -1,6 +1,7 @@
+import os
+
 import numpy as np
 from scipy.io import loadmat
-import os
 
 if os.path.exists("/cluster/project9/CCA_public/data/"):
     PROJECT_DIR = "/cluster/project9/CCA_public/data/"
