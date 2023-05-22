@@ -152,4 +152,6 @@ class DCCA_BarlowTwins(DCCA_EY):
         cdif = (corr - diag).pow(2)
         cdif[~diag.bool()] *= 5e-3
         loss = 0.025 * cdif.sum()
-        return loss
+        return {
+            "objective": loss,
+        }

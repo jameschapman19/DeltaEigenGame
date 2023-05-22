@@ -26,17 +26,17 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data="SplitMNIST",
     mnist_type="MNIST",
-    lr=0.001,
+    lr=0.0001,
     batch_size=100,
-    latent_dims=3,
+    latent_dims=50,
     epochs=1000,
-    model="DCCASVD",
+    model="DCCABARLOWTWINS",
     architecture="linear",
     rho=0.1,
     random_seed=1,
-    optimizer="sgd",
+    optimizer="adam",
     project="DeepCCA",
-    num_workers=0,
+    num_workers=8,
 )
 
 # Define a dictionary to map model names to classes
