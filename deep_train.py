@@ -193,7 +193,7 @@ def main():
         ),
         enable_checkpointing=False,
 
-        log_every_n_steps=10,
+        log_every_n_steps=1000,
 
         accelerator="gpu",
 

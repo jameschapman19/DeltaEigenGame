@@ -12,14 +12,14 @@ sns.set_style("whitegrid")
 DASHES = [(0, 0), (2, 2), (2, 2), (2, 2)]
 MODEL_TO_TITLE = {
     "DCCAEY_NPSD": "DCCA-EY",
-    "DCCAGH": "DCCA-GH",
+    "DCCASimpler": "DCCA-SVD",
+    # "DCCAGH": "DCCA-GH",
     "DCCANOI": "DCCA-NOI",
     "DCCA": "DCCA-STOL-100",
-    "DCCASimpler": "DCCA-SVD",
-    "DCCABT": "DCCA-BT",
+    "DCCABARLOWTWINS": "DCCA-BarlowTwins",
 }
 
-ORDER = ["DCCA-EY", "DCCA-SVD", "DCCA-BT", "DCCA-NOI", "DCCA-STOL-100"]
+ORDER = ["DCCA-EY", "DCCA-SVD", "DCCA-BarlowTwins", "DCCA-NOI", "DCCA-STOL-100"]
 
 
 def get_best_runs(
@@ -39,8 +39,8 @@ def get_best_runs(
     return df
 
 
-def plot_all_models(data="XRMB", lr=None):
-    df = get_best_runs(data=data, lr=lr)
+def plot_all_models(data="XRMB", lr=None, batch_size=100):
+    df = get_best_runs(data=data, lr=lr, batch_size=batch_size)
     plot_tcc(df, title=f"dcca_{data}", data=data, hue="model")
 
 
@@ -151,7 +151,7 @@ def plot_minibatch_size_ablation(data="mnist"):
 
 # plot_minibatch_size_ablation("SplitMNIST")
 # plot_simpler_lr()
-plot_all_models(data="XRMB")
+# plot_all_models(data="XRMB")
 plot_all_models(data="SplitMNIST")
 
 # for data in ["SplitMNIST", "XRMB"]:
