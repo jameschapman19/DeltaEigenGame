@@ -5,11 +5,9 @@ import argparse
 
 import numpy as np
 import wandb  # module for logging and tracking experiments
-from cca_zoo.models import rCCA, PLS
-from scipy.linalg import svdvals
+from cca_zoo.models import rCCA, PLS, CCA
 
 import cca  # custom module for CCA models
-import pls  # custom module for PLS models
 from data_utils import (
     load_mnist,
     load_mediamill,
@@ -20,12 +18,12 @@ from data_utils import (
 def get_arguments():
     # This function parses the command-line arguments and returns a parser object
     parser = argparse.ArgumentParser(
-        description="Train Models with Delta-EigenGame", add_help=False
+        description="Train Stochastic CCA Models", add_help=False
     )
 
     # Experiment
     parser.add_argument(
-        "--model", type=str, default="gepeybiased", help="Model to train"
+        "--model", type=str, default="gepey", help="Model to train"
     )
     parser.add_argument("--data", type=str, default="cifar", help="Data directory")
     parser.add_argument(
@@ -60,14 +58,6 @@ MODEL_DICT = {
         "gepey": cca.GEPEY,
         "gepeybiased": cca.GEPEYBiased,
         "svd": cca.SVD,
-    },
-    "pls": {
-        "sgha": pls.SGHA,
-        "gamma": pls.GammaEigenGame,
-        "sp": pls.StochasticPower,
-        "saa": PLS,
-        "gepgh": pls.GEPGH,
-        "gepey": pls.GEPEY,
     },
 }
 
@@ -136,12 +126,7 @@ def main():
         X_test = x_scaler.transform(X_test)
         Y_test = y_scaler.transform(Y_test)
 
-    if wandb.config.data == "synthetic":
-        true = {
-            "train": svdvals(X.T @ Y)[:5].sum(),
-            "val": tvc([np.eye(10), np.eye(10)], [X_test, Y_test]).sum(),
-        }
-    else:
+    try:
         true = {
             "train": np.load(
                 f"./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy"
@@ -150,6 +135,13 @@ def main():
                 f"./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy"
             )[: wandb.config.components].sum(),
         }
+    except FileNotFoundError:
+        cca = CCA(latent_dims=4, scale=False, centre=False).fit((X, Y))
+        cca_score_train = cca.score((X, Y))
+        np.save(f"./results/{wandb.config.data}_cca_score_train.npy", cca_score_train)
+        if X_test is not None:
+            cca_score_test = cca.score((X_test, Y_test))
+            np.save(f"./results/{wandb.config.data}_cca_score_test.npy", cca_score_test)
     # log every 5% of an epoch for a given dataset and batch size
     # log_every = int((X.shape[0] / 20))
     # round down X.shape[0] to the nearest 100
@@ -163,7 +155,7 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "Train Models with Delta-EigenGame", parents=[get_arguments()]
+        "Train Stochastic CCA Models", parents=[get_arguments()]
     )
     args = parser.parse_args()
     args = vars(args)

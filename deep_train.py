@@ -35,7 +35,7 @@ defaults = dict(
     rho=0.1,
     random_seed=1,
     optimizer="sgd",
-    project="DeepDeltaEigenGame",
+    project="DeepCCA",
     num_workers=0,
 )
 
@@ -51,7 +51,7 @@ MODEL_DICT = {
 def main():
     """Main function to run the experiment"""
     # Initialize wandb with the default configuration
-    wandb.init(config=defaults, project="DeepDeltaEigenGame")
+    wandb.init(config=defaults, project="DeepCCA")
     config = wandb.config
 
     # Set the random seed for reproducibility

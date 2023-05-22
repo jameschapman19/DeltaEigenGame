@@ -19,6 +19,7 @@ parameters:
       - mediamill
   batch_size:
     values:
+      - 100
       - 20
       - 5
   components:
@@ -34,16 +35,16 @@ parameters:
       - 3
       - 4
       - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
   lr:
     values:
       - 0.01
       - 0.001
       - 0.0001
+  gamma:
+    values:
+      - 0.9
+      - 0.1
+      - 0.01
   momentum:
     values:
       - 0
