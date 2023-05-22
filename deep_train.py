@@ -18,7 +18,7 @@ from sklearn.model_selection import train_test_split
 from torch.cuda import device_count
 from torch.utils.data import random_split
 
-from dcca import DCCA_EY, DCCA_SVD
+from dcca import DCCA_EY, DCCA_SVD, DCCA_BarlowTwins
 
 WANDB_START_METHOD = "thread"
 
@@ -45,6 +45,7 @@ MODEL_DICT = {
     "DCCANOI": DCCA_NOI,
     "DCCAEY": DCCA_EY,
     "DCCASVD": DCCA_SVD,
+    "DCCABARLOWTWINS": DCCA_BarlowTwins,
 }
 
 

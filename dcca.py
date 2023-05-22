@@ -138,3 +138,18 @@ class DCCA_SVD(DCCA_EY):
             "rewards": rewards,
             "penalties": penalties,
         }
+
+class DCCA_BarlowTwins(DCCA_EY):
+    def loss(self, views, views2=None, **kwargs):
+        z = self(views)
+        N, D = z[0].size()
+        bn = torch.nn.BatchNorm1d(D, affine=False).to(z[0].device)
+        z = [bn(zi) for zi in z]
+
+        corr = torch.einsum("bi, bj -> ij", z[0], z[1]) / N
+
+        diag = torch.eye(D, device=corr.device)
+        cdif = (corr - diag).pow(2)
+        cdif[~diag.bool()] *= 5e-3
+        loss = 0.025 * cdif.sum()
+        return loss

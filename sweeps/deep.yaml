@@ -12,14 +12,12 @@ parameters:
   architecture:
     values: [ 'nonlinear' ]
   batch_size:
-    values: [ 100,50,20,5 ]
+    values: [ 100 ]
   lr:
     values: [ 1e-3,1e-4,1e-5 ]
-  rho:
-    values: [ 0.6, 0.8, 0.9 ]
   epochs:
     values: [ 50 ]
   model:
-    values: [ 'DCCAEY', 'DCCASVD', 'DCCA', 'DCCANOI' ]
+    values: [ 'DCCABARLOWTWINS' ]
   random_seed:
     values: [ 1 ]
