@@ -6,7 +6,7 @@ from scipy.io import loadmat
 if os.path.exists("/cluster/project9/CCA_public/data/"):
     PROJECT_DIR = "/cluster/project9/CCA_public/data/"
 else:
-    PROJECT_DIR = "./data/"
+    PROJECT_DIR = "../data/"
 
 
 def load_cifar():

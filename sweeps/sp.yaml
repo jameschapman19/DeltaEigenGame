@@ -3,7 +3,7 @@ command:
   - python3
   - ${program}
   - ${args}
-program: train.py
+program: stochastic_cca.py
 project: GEP-GD
 method: grid
 parameters:

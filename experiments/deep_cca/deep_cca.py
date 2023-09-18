@@ -18,25 +18,25 @@ from sklearn.model_selection import train_test_split
 from torch.cuda import device_count
 from torch.utils.data import random_split
 
-from dcca import DCCA_EY, DCCA_SVD, DCCA_BarlowTwins
+from src.dcca import DCCA_EY, DCCA_SVD, DCCA_BarlowTwins, DCCA_EY_Unbiased, DCCA_SVD_Unbiased
 
 WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb
 defaults = dict(
-    data="SplitMNIST",
+    data="sim",
     mnist_type="MNIST",
-    lr=0.0001,
-    batch_size=100,
+    lr=0.001,
+    batch_size=10,
     latent_dims=50,
     epochs=1000,
-    model="DCCABARLOWTWINS",
+    model="DCCAEYUnbiased",
     architecture="linear",
     rho=0.1,
     random_seed=1,
     optimizer="adam",
     project="DeepCCA",
-    num_workers=8,
+    num_workers=0,
 )
 
 # Define a dictionary to map model names to classes
@@ -44,7 +44,9 @@ MODEL_DICT = {
     "DCCA": DCCA,
     "DCCANOI": DCCA_NOI,
     "DCCAEY": DCCA_EY,
+    "DCCAEYUnbiased": DCCA_EY_Unbiased,
     "DCCASVD": DCCA_SVD,
+    "DCCASVDUnbiased": DCCA_SVD_Unbiased,
     "DCCABARLOWTWINS": DCCA_BarlowTwins,
 }
 

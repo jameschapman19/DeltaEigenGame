@@ -4,7 +4,7 @@ import wandb
 
 def get_run_data(ids=None, project=""):
     api = wandb.Api(timeout=20)
-    runs = api.runs(f"jameschapman/{project}")
+    runs = api.runs(f"{project}")
     data = []
     for run in runs:
         if ids is None or run.id in ids:
@@ -21,7 +21,7 @@ def get_summary(project=""):
     api = wandb.Api(timeout=60)
 
     # Project is specified by <entity/project-name>
-    runs = api.runs(f"jameschapman/{project}")
+    runs = api.runs(f"{project}")
     summary_list = []
     config_list = []
     name_list = []

@@ -3,7 +3,7 @@ command:
   - python3
   - ${program}
   - ${args}
-program: deep_train.py
+program: deep_cca.py
 project: DeepDeltaEigenGame
 method: grid
 parameters:

@@ -5,10 +5,10 @@ import argparse
 
 import numpy as np
 import wandb  # module for logging and tracking experiments
-from cca_zoo.models import rCCA, PLS, CCA
+from cca_zoo.linear import rCCA, PLS, CCA, CCA_GHA, CCA_EY, CCA_SVD
 
-import cca  # custom module for CCA models
-from data_utils import (
+from src import cca
+from src.data_utils import (
     load_mnist,
     load_mediamill,
     load_cifar,
@@ -23,7 +23,7 @@ def get_arguments():
 
     # Experiment
     parser.add_argument(
-        "--model", type=str, default="gepey", help="Model to train"
+        "--model", type=str, default="ey", help="Model to train"
     )
     parser.add_argument("--data", type=str, default="cifar", help="Data directory")
     parser.add_argument(
@@ -31,13 +31,13 @@ def get_arguments():
     )
     parser.add_argument("--seed", type=int, default=5, help="Random seed")
     parser.add_argument(
-        "--components", type=int, default=10, help="Number of components"
+        "--components", type=int, default=4, help="Number of components"
     )
 
     # Parameters
-    parser.add_argument("--batch_size", type=int, default=10, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=100, help="Batch size")
     parser.add_argument("--epochs", type=int, default=10, help="Number of epochs")
-    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument(
         "--momentum", type=bool, default=0, help="Use Nesterov momentum"
     )
@@ -50,14 +50,11 @@ def get_arguments():
 
 MODEL_DICT = {
     "cca": {
-        "sgha": cca.SGHA,
         "gamma": cca.GammaEigenGame,
         "saa": rCCA,
-        "gepgh": cca.GEPGH,
-        "gepghbiased": cca.GEPGHBiased,
-        "gepey": cca.GEPEY,
-        "gepeybiased": cca.GEPEYBiased,
-        "svd": cca.SVD,
+        "gha": CCA_GHA,
+        "ey": CCA_EY,
+        "svd": CCA_SVD,
     },
 }
 
@@ -136,16 +133,22 @@ def main():
             )[: wandb.config.components].sum(),
         }
     except FileNotFoundError:
-        cca = CCA(latent_dims=4, scale=False, centre=False).fit((X, Y))
+        cca = CCA(latent_dims=wandb.config.components, scale=False, centre=False).fit((X, Y))
         cca_score_train = cca.score((X, Y))
         np.save(f"./results/{wandb.config.data}_cca_score_train.npy", cca_score_train)
         if X_test is not None:
             cca_score_test = cca.score((X_test, Y_test))
             np.save(f"./results/{wandb.config.data}_cca_score_test.npy", cca_score_test)
-    # log every 5% of an epoch for a given dataset and batch size
-    # log_every = int((X.shape[0] / 20))
-    # round down X.shape[0] to the nearest 100
-    log_every = int((X.shape[0] // 100) / 20)
+        true = {
+            "train": np.load(
+                f"./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy"
+            )[: wandb.config.components].sum(),
+            "val": np.load(
+                f"./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy"
+            )[: wandb.config.components].sum(),
+        }
+    # we would like to log every 5% of an epoch as measured in batches
+    log_every = int(X.shape[0] / wandb.config.batch_size / 20)
     if X_test is not None:
         model.fit([X, Y], val_views=[X_test, Y_test], true=true, log_every=log_every)
     else:

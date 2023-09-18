@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from wandb_utils import get_summary, get_run_data
+from src.wandb_utils import get_summary, get_run_data
 
 sns.set_style("whitegrid")
 sns.set_context("paper", font_scale=2.0)

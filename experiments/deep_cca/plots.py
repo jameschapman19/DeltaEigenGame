@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from wandb_utils import get_summary, get_run_data
+from src.wandb_utils import get_summary, get_run_data
 
 PROJECT = "DeepDeltaEigenGame"
 

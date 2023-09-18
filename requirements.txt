@@ -1,9 +1,4 @@
-wandb
 cca-zoo
 pytorch-lightning
-torch
-torchvision
-scipy
-numpy
 seaborn
 pandas
