@@ -16,49 +16,52 @@ class GammaEigenGame(CCA_EY):
         for k, v in loss.items():
             self.log(k, v, prog_bar=True)
         self._update_grads(batch["views"], batch.get("independent_views", None))
-        self.optimizer_step(self.optimizers())
-        return loss
+        for i in range(len(self.torch_weights)):
+            self.torch_weights[i].data -= self.learning_rate * self.torch_weights[i].grad
+            self.torch_weights[i].data /= torch.norm(self.torch_weights[i], dim=0)
 
-    def grads(self, views, u=None):
-        # stack self.torch_weights and take the norm
-        # combined weights
-        u = torch.stack(self.torch_weights)
-        norm = torch.linalg.norm(u, dim=0, keepdim=True)
-        weights = [weights / norm for weights in self.torch_weights]
-
+    def loss(self, views, independent_views=None, **kwargs):
+        # measure the correlation between the views
         z = self(views)
-        wAw, wBw = self.get_AB(self, z)
-        Aw = torch.vstack(views[0].T @ views[1] @ weights[0], views[1].T @ views[0] @ weights[1])
-        Bw = torch.vstack(views[0].T @ views[0] @ weights[0], views[1].T @ views[1] @ weights[1])
+        return {'correlation': torch.corrcoef(torch.hstack(z).T)[0, 1]}
 
-        if self.Bu is None:
-            self.Bu = u
-
-        denominator = torch.diag(torch.mm(u.T, self.Bu))
-        denominator = torch.where(denominator > self.rho, torch.sqrt(denominator), torch.tensor([self.rho]))
-        y = u / denominator
-        By = self.Bu / denominator
-        Ay, _, _, _ = self._get_terms(views, y, unbiased=False)
-
+    def _update_grads(self, views, independent_views=None):
+        A, B = self._AB(views)
+        u = torch.vstack([w.data for w in self.torch_weights])
+        Aw = A @ u
+        Bw = B @ u
+        wAw = torch.diag(u.T @ Aw)
+        wBw = torch.diag(u.T @ Bw)
         rewards = Aw * torch.diag(wBw) - Bw * torch.diag(wAw)
-        penalties = By.mm(
-            torch.triu(torch.mm(Ay.T, u) * torch.diag(wBw), diagonal=1)
-        ) - Bw * torch.diag(
-            torch.tril(u.T.mm(By), diagonal=-1).mm(Ay.T.mm(u))
-        )
+        for i in range(len(self.torch_weights)):
+            self.torch_weights[i].grad =- rewards[:views[i].shape[1]]
 
-        self.Bu = self.Bu + self.gamma * (Bw - self.Bu)
+    def _AB(self, views):
+        all_views = torch.hstack(views)
+        A = torch.cov(all_views.T)
+        B = torch.block_diag(*[torch.cov(view.T) for view in views])
+        A = A - B
+        return A, B
 
-        grads = rewards - penalties
-
-        self.torch_weights[0].grad = grads[:views[0].shape[1]]
-        self.torch_weights[1].grad = grads[views[0].shape[1]:]
+    def _get_Aw(self, views):
+        n = views[0].shape[0]
+        Aw = [views[0].T @ views[1] @ self.torch_weights[1] / n, views[1].T @ views[0] @ self.torch_weights[0] / n]
+        Bw = [views[0].T @ views[0] @ self.torch_weights[0] / n, views[1].T @ views[1] @ self.torch_weights[1] / n]
+        return Aw, Bw
 
 
 if __name__ == '__main__':
     import numpy as np
+    from cca_zoo.linear import CCA
 
-    views = [np.random.rand(100, 10), np.random.rand(100, 10)]
+    views = [np.random.rand(100, 12), np.random.rand(100, 10)]
+    cca = CCA().fit(views).score(views)
 
-    model = GammaEigenGame()
-    model.fit(views)
+    # from cca_zoo.linear import CCA_EY
+    # model = CCA_EY(epochs=1000, learning_rate=1e-1, optimizer_kwargs={'optimizer': 'SGD', 'nesterov':False}).fit(views)
+    # model_score = model.score(views)
+    # print()
+    model = GammaEigenGame(epochs=1000, learning_rate=1, optimizer_kwargs={'optimizer': 'SGD', 'nesterov': False}).fit(
+        views)
+    model_score = model.score(views)
+    print()
