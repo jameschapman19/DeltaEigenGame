@@ -1,67 +1,83 @@
-from cca_zoo.linear import CCA_EY
 import torch
+from cca_zoo.linear import CCA_EY
 
 
 class GammaEigenGame(CCA_EY):
-    gamma = 1e-1
-    Bu = None
+    """
+    Implement the Stochastic γ-EigenGame algorithm based on the following paper:
+
+    Gemp, Ian, Charlie Chen, and Brian McWilliams.
+    "The generalized eigenvalue problem as a Nash equilibrium."
+    arXiv preprint arXiv:2206.04993 (2022).
+
+    Attributes:
+        gamma (float): Step size for Bv updates.
+        Bv (tensor): Initialized as None and will be updated during training.
+        rho (float): Small scalar lower bounding σmin(B).
+        manual_optimization (bool): Flag to indicate manual optimization.
+    """
+
+    gamma = 0.1
+    Bv = None
     rho = 1e-10
     manual_optimization = True
 
     def training_step(self, batch, batch_idx):
+        """
+        Perform a single training step.
+
+        Args:
+            batch (dict): The current batch of data.
+            batch_idx (int): The index of the current batch.
+        """
         if self.batch_size is None:
             batch = self.batch
-        loss = self.loss(batch["views"], batch.get("independent_views", None))
-        # Logging the loss components
-        for k, v in loss.items():
-            self.log(k, v, prog_bar=True)
-        self._update_grads(batch["views"], batch.get("independent_views", None))
-        for i in range(len(self.torch_weights)):
-            self.torch_weights[i].data -= self.learning_rate * self.torch_weights[i].grad
-            self.torch_weights[i].data /= torch.norm(self.torch_weights[i], dim=0)
+        self._update_grads(batch["views"])
+        self.v = self.v + self.learning_rate * self.v.grad
+        self.v /= torch.norm(self.v, dim=0)
+        for w, v in zip(self.torch_weights, torch.split(self.v, self.n_features_)):
+            w.data = v
+    def on_train_start(self) -> None:
+        """Initialize v from torch_weights at the start of training."""
+        self.v = torch.vstack([w.data for w in self.torch_weights])
 
-    def loss(self, views, independent_views=None, **kwargs):
-        # measure the correlation between the views
-        z = self(views)
-        return {'correlation': torch.corrcoef(torch.hstack(z).T)[0, 1]}
+    def _update_grads(self, views):
+        """
+        Update gradients based on the current views.
 
-    def _update_grads(self, views, independent_views=None):
+        Args:
+            views (list): List of current views.
+        """
         A, B = self._AB(views)
-        u = torch.vstack([w.data for w in self.torch_weights])
-        Aw = A @ u
-        Bw = B @ u
-        wAw = torch.diag(u.T @ Aw)
-        wBw = torch.diag(u.T @ Bw)
-        rewards = Aw * torch.diag(wBw) - Bw * torch.diag(wAw)
-        for i in range(len(self.torch_weights)):
-            self.torch_weights[i].grad =- rewards[:views[i].shape[1]]
+        Av = A @ self.v
+        Bv = B @ self.v
+        if self.Bv is None:
+            self.Bv = Bv
+        denominator = torch.diag(self.v.T @ self.Bv)
+        denominator = torch.where(denominator > self.rho, torch.sqrt(denominator), self.rho)
+        y = self.v / denominator[None, :]
+        By = self.Bv / denominator
+        Ay = A @ y
+        rewards = Av * torch.diag(self.v.T @ Bv) - Bv * torch.diag(self.v.T @ Av)
+        penalties = By @ torch.triu(Ay.T @ self.v * torch.diag(self.v.T @ Bv), 1) - Bv * torch.diag(
+            torch.tril(self.v.T @ By, -1) @ Ay.T @ self.v
+        )
+        self.Bv = self.Bv + self.gamma * (Bv - self.Bv)
+        grads = rewards - penalties
+        self.v.grad = grads
 
     def _AB(self, views):
+        """
+        Compute A and B matrices.
+
+        Args:
+            views (list): List of current views.
+
+        Returns:
+            tuple: A tuple containing A and B matrices.
+        """
         all_views = torch.hstack(views)
         A = torch.cov(all_views.T)
         B = torch.block_diag(*[torch.cov(view.T) for view in views])
-        A = A - B
+        A -= B
         return A, B
-
-    def _get_Aw(self, views):
-        n = views[0].shape[0]
-        Aw = [views[0].T @ views[1] @ self.torch_weights[1] / n, views[1].T @ views[0] @ self.torch_weights[0] / n]
-        Bw = [views[0].T @ views[0] @ self.torch_weights[0] / n, views[1].T @ views[1] @ self.torch_weights[1] / n]
-        return Aw, Bw
-
-
-if __name__ == '__main__':
-    import numpy as np
-    from cca_zoo.linear import CCA
-
-    views = [np.random.rand(100, 12), np.random.rand(100, 10)]
-    cca = CCA().fit(views).score(views)
-
-    # from cca_zoo.linear import CCA_EY
-    # model = CCA_EY(epochs=1000, learning_rate=1e-1, optimizer_kwargs={'optimizer': 'SGD', 'nesterov':False}).fit(views)
-    # model_score = model.score(views)
-    # print()
-    model = GammaEigenGame(epochs=1000, learning_rate=1, optimizer_kwargs={'optimizer': 'SGD', 'nesterov': False}).fit(
-        views)
-    model_score = model.score(views)
-    print()

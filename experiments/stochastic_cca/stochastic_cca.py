@@ -1,52 +1,25 @@
-# This script trains different models for CCA or PLS objectives on various datasets
-# using Delta-EigenGame algorithm
-
-import argparse
-
 import numpy as np
-import wandb  # module for logging and tracking experiments
-from cca_zoo.linear import rCCA, PLS, CCA, CCA_GHA, CCA_EY, CCA_SVD
+import pytorch_lightning as pl
+from cca_zoo.linear import rCCA, CCA_GHA, CCA_EY, CCA, MCCA
+from lightning.pytorch.loggers import WandbLogger
+from pytorch_lightning import Callback
 
+import wandb
 from src import cca
-from src.data_utils import (
-    load_mnist,
-    load_mediamill,
-    load_cifar,
-)  # custom module for loading datasets
+from src.data_utils import load_mnist, load_mediamill, load_cifar
 
-
-def get_arguments():
-    # This function parses the command-line arguments and returns a parser object
-    parser = argparse.ArgumentParser(
-        description="Train Stochastic CCA Models", add_help=False
-    )
-
-    # Experiment
-    parser.add_argument(
-        "--model", type=str, default="ey", help="Model to train"
-    )
-    parser.add_argument("--data", type=str, default="cifar", help="Data directory")
-    parser.add_argument(
-        "--objective", type=str, default="cca", help="Objective function"
-    )
-    parser.add_argument("--seed", type=int, default=5, help="Random seed")
-    parser.add_argument(
-        "--components", type=int, default=4, help="Number of components"
-    )
-
-    # Parameters
-    parser.add_argument("--batch_size", type=int, default=100, help="Batch size")
-    parser.add_argument("--epochs", type=int, default=10, help="Number of epochs")
-    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
-    parser.add_argument(
-        "--momentum", type=bool, default=0, help="Use Nesterov momentum"
-    )
-
-    # GammaEigenGame
-    parser.add_argument("--gamma", type=float, default=0.9, help="Gamma")
-
-    return parser
-
+# Define default hyperparameters
+defaults = {
+    "model": "gamma",
+    "data": "cifar",
+    "objective": "cca",
+    "seed": 5,
+    "components": 4,
+    "batch_size": 100,
+    "epochs": 10,
+    "lr": 1e-1,
+    "gamma": 0.1,
+}
 
 MODEL_DICT = {
     "cca": {
@@ -54,36 +27,45 @@ MODEL_DICT = {
         "saa": rCCA,
         "gha": CCA_GHA,
         "ey": CCA_EY,
-        "svd": CCA_SVD,
     },
 }
 
+class SampleCounterCallback(Callback):
+    def __init__(self):
+        self.samples_seen = 0
 
-# This function computes the total variance captured (TVC) by the weights of the views
-def tvc(weights, views):
-    z = [view @ weight for view, weight in zip(views, weights)]
-    m = z[0].T @ z[1] / (z[0].shape[0] - 1)
-    return np.diag(m)
+    def on_train_batch_end(
+            self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs, batch, batch_idx: int
+        ):
+        self.samples_seen += pl_module.batch_size
+        pl_module.log("samples_seen", self.samples_seen)
+
+
+class CorrelationCapturedCallback(Callback):
+    def __init__(self, true_tcc,train_views, val_views=None):
+        self.true_tcc = true_tcc
+        self.train_views=train_views
+        self.val_views=val_views
+
+    def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        mcca=MCCA(pl_module.latent_dimensions)
+        mcca.weights = [w.detach().cpu().numpy() for w in pl_module.torch_weights]
+        mcca.n_views_ = len(self.train_views)
+        train_tcc = mcca.score(self.train_views)
+        pl_module.log("train/TCC", train_tcc.sum())
+        train_pcc = train_tcc.sum()/self.true_tcc["train"]
+        pl_module.log("train/PCC", train_pcc)
+        if self.val_views is not None:
+            val_tcc = mcca.score(self.val_views)
+            pl_module.log("val/TCC", val_tcc.sum())
 
 
 def main():
-    np.random.seed(wandb.config.seed)
+    # Initialize wandb with the default configuration
+    wandb.init(config=defaults, project="StochasticCCA")
+    config = wandb.config
 
-    # Initialize the model based on the objective and model name
-    model = MODEL_DICT[wandb.config.objective][wandb.config.model](
-        batch_size=wandb.config.batch_size,
-        epochs=wandb.config.epochs,
-        learning_rate=wandb.config.lr,
-        latent_dims=wandb.config.components,
-        momentum=wandb.config.momentum,
-        random_state=wandb.config.seed,
-        scale=False,
-        centre=False,
-    )
-
-    # Set the gamma parameter if using GammaEigenGame model
-    if wandb.config.model == "gamma":
-        model.gamma = wandb.config.gamma
+    np.random.seed(config.seed)
 
     # Load the data based on the data name
     if wandb.config.data == "synthetic":
@@ -122,46 +104,60 @@ def main():
     if X_test is not None:
         X_test = x_scaler.transform(X_test)
         Y_test = y_scaler.transform(Y_test)
+        
+    train_views = [X, Y]
+    val_views = [X_test, Y_test]
 
     try:
         true = {
             "train": np.load(
-                f"./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy"
+                f"results/{wandb.config.data}_{wandb.config.objective}_score_train.npy"
             )[: wandb.config.components].sum(),
             "val": np.load(
-                f"./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy"
+                f"results/{wandb.config.data}_{wandb.config.objective}_score_test.npy"
             )[: wandb.config.components].sum(),
         }
     except FileNotFoundError:
-        cca = CCA(latent_dims=wandb.config.components, scale=False, centre=False).fit((X, Y))
-        cca_score_train = cca.score((X, Y))
-        np.save(f"./results/{wandb.config.data}_cca_score_train.npy", cca_score_train)
+        cca = CCA(latent_dimensions=wandb.config.components).fit(train_views)
+        cca_score_train = cca.score(train_views)
+        np.save(f"results/{wandb.config.data}_cca_score_train.npy", cca_score_train)
         if X_test is not None:
             cca_score_test = cca.score((X_test, Y_test))
-            np.save(f"./results/{wandb.config.data}_cca_score_test.npy", cca_score_test)
+            np.save(f"results/{wandb.config.data}_cca_score_test.npy", cca_score_test)
         true = {
             "train": np.load(
-                f"./results/{wandb.config.data}_{wandb.config.objective}_score_train.npy"
+                f"results/{wandb.config.data}_{wandb.config.objective}_score_train.npy"
             )[: wandb.config.components].sum(),
             "val": np.load(
-                f"./results/{wandb.config.data}_{wandb.config.objective}_score_test.npy"
+                f"results/{wandb.config.data}_{wandb.config.objective}_score_test.npy"
             )[: wandb.config.components].sum(),
         }
+
+
+
     # we would like to log every 5% of an epoch as measured in batches
     log_every = int(X.shape[0] / wandb.config.batch_size / 20)
+    # Initialize the model based on the objective and model name
+    model = MODEL_DICT[config.objective][config.model](
+        batch_size=config.batch_size,
+        epochs=config.epochs,
+        learning_rate=config.lr,
+        latent_dimensions=config.components,
+        random_state=config.seed,
+        trainer_kwargs={"logger": WandbLogger(),
+                        "callbacks": [CorrelationCapturedCallback(true, train_views, val_views=val_views), SampleCounterCallback()],
+                        "enable_progress_bar": True,
+                        "val_check_interval": 0.1}
+    )
+    # Set the gamma parameter if using GammaEigenGame model
+    if config.model == "gamma":
+        model.gamma = config.gamma
+
     if X_test is not None:
-        model.fit([X, Y], val_views=[X_test, Y_test], true=true, log_every=log_every)
+        model.fit(train_views, validation_views=val_views, true=true)
     else:
-        model.fit([X, Y], true=true, log_every=log_every)
-    print()
+        model.fit(train_views, true=true)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        "Train Stochastic CCA Models", parents=[get_arguments()]
-    )
-    args = parser.parse_args()
-    args = vars(args)
-    wandb.init(config=args)
     main()
-    wandb.finish()
