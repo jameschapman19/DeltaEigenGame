@@ -22,7 +22,7 @@ defaults = dict(
     data="SplitMNIST",
     mnist_type="MNIST",
     lr=0.001,
-    batch_size=1000,
+    batch_size=2,
     latent_dims=50,
     epochs=50,
     model="DCCAEY",
@@ -30,7 +30,6 @@ defaults = dict(
     rho=0.1,
     random_seed=1,
     optimizer="adam",
-    project="DeepCCA",
     num_workers=4,
 )
 
