@@ -37,9 +37,14 @@ class GammaEigenGame(CCA_EY):
         self.v /= torch.norm(self.v, dim=0)
         for w, v in zip(self.torch_weights, torch.split(self.v, self.n_features_)):
             w.data = v
+
+    def validation_step(self, batch, batch_idx):
+        pass
+
     def on_train_start(self) -> None:
         """Initialize v from torch_weights at the start of training."""
         self.v = torch.vstack([w.data for w in self.torch_weights])
+        self.v /= torch.norm(self.v, dim=0)
 
     def _update_grads(self, views):
         """
@@ -51,6 +56,7 @@ class GammaEigenGame(CCA_EY):
         A, B = self._AB(views)
         Av = A @ self.v
         Bv = B @ self.v
+        check = torch.diag(self.v.T @ Av) / torch.diag(self.v.T @ Bv)
         if self.Bv is None:
             self.Bv = Bv
         denominator = torch.diag(self.v.T @ self.Bv)
@@ -62,7 +68,7 @@ class GammaEigenGame(CCA_EY):
         penalties = By @ torch.triu(Ay.T @ self.v * torch.diag(self.v.T @ Bv), 1) - Bv * torch.diag(
             torch.tril(self.v.T @ By, -1) @ Ay.T @ self.v
         )
-        self.Bv = self.Bv + self.gamma * (Bv - self.Bv)
+        self.Bv += self.gamma * (Bv - self.Bv)
         grads = rewards - penalties
         self.v.grad = grads
 
@@ -81,3 +87,4 @@ class GammaEigenGame(CCA_EY):
         B = torch.block_diag(*[torch.cov(view.T) for view in views])
         A -= B
         return A, B
+

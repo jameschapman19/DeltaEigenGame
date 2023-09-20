@@ -1,0 +1,46 @@
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
+program: experiments/stochastic_cca/train.py
+project: StochasticCCA
+method: grid
+parameters:
+  objective:
+    values:
+      - cca
+  model:
+    values:
+      - ey
+      - gha
+  data:
+    values:
+      - mnist
+      - cifar
+      - mediamill
+  batch_size:
+    values:
+      - 100
+  components:
+    values:
+      - 4
+  epochs:
+    values:
+      - 1
+  seed:
+    values:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+  lr:
+    values:
+      - 1
+      - 0.1
+      - 0.01
+  optimizer:
+    values:
+      - Adam
+      - SGD
