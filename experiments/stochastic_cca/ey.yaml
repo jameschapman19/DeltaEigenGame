@@ -22,11 +22,7 @@ parameters:
   batch_size:
     values:
       - 100
-  components:
-    values:
-      - 4
-  epochs:
-    values:
+      - 10
       - 1
   seed:
     values:
