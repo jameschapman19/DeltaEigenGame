@@ -13,14 +13,14 @@ from multiviewdata.torchdatasets import NoisyMNIST, SplitMNIST, XRMB
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import random_split
-
+import numpy as np
 import wandb
 
 WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb
 defaults = dict(
-    data="XRMB",
+    data="SplitMNIST",
     mnist_type="MNIST",
     lr=0.0001,
     batch_size=10,
@@ -36,22 +36,23 @@ defaults = dict(
 
 
 class IndependentMixin:
+    random_state = np.random.RandomState(0)
     def __getitem__(self, index):
         views = super().__getitem__(index)
         independent_index = self.random_state.randint(0, len(self))
         independent_views = super().__getitem__(independent_index)
-        return {"views": views, "independent_views": independent_views}
+        return {"views": views["views"], "independent_views": independent_views["views"]}
 
 
-class XRMB_(XRMB, IndependentMixin):
+class XRMB_(IndependentMixin,XRMB):
     pass
 
 
-class NoisyMNIST_(NoisyMNIST, IndependentMixin):
+class NoisyMNIST_(IndependentMixin,NoisyMNIST):
     pass
 
 
-class SplitMNIST_(SplitMNIST, IndependentMixin):
+class SplitMNIST_(IndependentMixin,SplitMNIST):
     pass
 
 
