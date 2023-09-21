@@ -22,15 +22,15 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data="sim",
     mnist_type="MNIST",
-    lr=0.00001,
+    lr=0.0001,
     batch_size=100,
     latent_dims=50,
     epochs=25,
-    model="DCCAEY",
-    architecture="nonlinear",
-    rho=0.1,
+    model="DCCANOI",
+    architecture="linear",
+    rho=0.9,
     random_seed=1,
-    optimizer="adam",
+    optimizer="sgd",
     num_workers=4,
 )
 
@@ -116,7 +116,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=num_workers,
         pin_memory=True,
         persistent_workers=persistent_workers,
@@ -124,7 +124,7 @@ def main():
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
         batch_size=config.batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=num_workers,
         pin_memory=True,
         persistent_workers=persistent_workers,
@@ -197,7 +197,7 @@ def main():
             os.getcwd(), config.model, f"{config.batch_size}", f"{config.lr}"
         ),
         enable_checkpointing=False,
-        enable_progress_bar=True,
+        enable_progress_bar=False,
         callbacks=[BatchTrainCorrelationCallback(), BatchValidationCorrelationCallback()],#, EYCallback((X,Y))],
     )
 
