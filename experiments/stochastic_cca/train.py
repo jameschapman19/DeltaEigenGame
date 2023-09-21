@@ -12,13 +12,13 @@ from src.data_utils import load_mnist, load_mediamill, load_cifar
 # Define default hyperparameters
 defaults = {
     "model": "gamma",
-    "data": "mnist",
+    "data": "cifar",
     "objective": "cca",
     "seed": 5,
     "components": 10,
     "batch_size": 100,
-    "epochs": 10,
-    "lr": 1e-3,
+    "epochs": 5,
+    "lr": 1e-4,
     "gamma": 1e-3,
     "optimizer": "SGD",
 }
@@ -88,6 +88,18 @@ def try_load_or_fit_cca(data_config, train_views, X_test=None, Y_test=None):
             "train": cca.score(train_views),
             "val": cca.score([X_test, Y_test]),
         }
+    elif data_config.data == "mediamill":
+        try:
+            # Try to load existing scores
+            return {
+                "train": load_scores(train_filename)
+            }
+        except FileNotFoundError:
+            cca = fit_cca(data_config, train_views)
+            np.save(train_filename, cca.score(train_views))
+            return {
+                "train": load_scores(train_filename)
+            }
     else:
         try:
             # Try to load existing scores
@@ -147,11 +159,15 @@ def main():
         Y_test = y_scaler.transform(Y_test)
 
     train_views = [X, Y]
-    val_views = [X_test, Y_test]
+    if X_test is not None:
+        val_views = [X_test, Y_test]
+    else:
+        val_views = [X[:1000], Y[:1000]]
 
     true = try_load_or_fit_cca(wandb.config, train_views, X_test, Y_test)
     true["train"] = true["train"][:wandb.config.components].sum()
-    true["val"] = true["val"][:wandb.config.components].sum()
+    if X_test is not None:
+        true["val"] = true["val"][:wandb.config.components].sum()
 
     # Initialize the model based on the objective and model name
     model = MODEL_DICT[config.objective][config.model](
@@ -173,10 +189,8 @@ def main():
     if config.model == "gamma":
         model.gamma = config.gamma
 
-    if X_test is not None:
-        model.fit(train_views, validation_views=val_views, true=true)
-    else:
-        model.fit(train_views, true=true)
+    model.fit(train_views, validation_views=val_views, true=true)
+    wandb.finish()
 
 
 if __name__ == "__main__":

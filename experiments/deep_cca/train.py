@@ -22,7 +22,7 @@ defaults = dict(
     data="SplitMNIST",
     mnist_type="MNIST",
     lr=0.001,
-    batch_size=100,
+    batch_size=10,
     latent_dims=50,
     epochs=100,
     model="DCCAEY",
@@ -180,7 +180,7 @@ def main():
     )
 
     trainer.fit(dcca, train_loader, test_loader)
-
+    wandb.finish()
 
 if __name__ == "__main__":
     main()
