@@ -15,7 +15,7 @@ defaults = {
     "data": "synthetic",
     "objective": "cca",
     "seed": 5,
-    "components": 1,
+    "components": 5,
     "batch_size": 5,
     "epochs": 1,
     "lr": 1e-5,
