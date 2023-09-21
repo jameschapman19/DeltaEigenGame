@@ -14,7 +14,7 @@ parameters:
   batch_size:
     values: [ 100, 50, 20, 5 ]
   lr:
-    values: [ 1e-1, 1e-2, 1e-3, 1e-4 ]
+    values: [ 1e-2, 1e-3, 1e-4 ]
   model:
     values: [ 'DCCANOI' ]
   rho:

@@ -61,8 +61,8 @@ def load_mnist() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     test = mnist["testX"]
 
     # Add Gaussian noise
-    train = train + np.random.normal(0, 100, train.shape)
-    test = test + np.random.normal(0, 100, test.shape)
+    train = train + np.random.normal(0, 10, train.shape)
+    test = test + np.random.normal(0, 10, test.shape)
 
     # Split data
     train_x, train_y = train[:, :392], train[:, 392:]

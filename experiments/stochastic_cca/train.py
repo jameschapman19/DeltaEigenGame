@@ -12,13 +12,13 @@ from src.data_utils import load_mnist, load_mediamill, load_cifar
 # Define default hyperparameters
 defaults = {
     "model": "ey",
-    "data": "mnist",
+    "data": "synthetic",
     "objective": "cca",
     "seed": 5,
-    "components": 10,
-    "batch_size": 100,
-    "epochs": 5,
-    "lr": 1e-2,
+    "components": 1,
+    "batch_size": 5,
+    "epochs": 500,
+    "lr": 1e-5,
     "gamma": 1e-3,
     "optimizer": "Adam",
 }
@@ -136,9 +136,9 @@ def main():
 
     # Load the data based on the data name
     if wandb.config.data == "synthetic":
-        dataset = LinearSimulatedData(view_features=[1000, 1000], latent_dims=5)
-        X, Y = dataset.sample(1000)
-        X_test, Y_test = dataset.sample(1000)
+        dataset = LinearSimulatedData(view_features=[500, 500], latent_dims=5)
+        X, Y = dataset.sample(200)
+        X_test, Y_test = dataset.sample(200)
 
     elif wandb.config.data == "cifar":
         X, Y, X_test, Y_test = load_cifar()
@@ -175,6 +175,9 @@ def main():
     if X_test is not None:
         true["val"] = true["val"][: wandb.config.components].sum()
 
+
+    # log every tenth of an epoch
+    log_every_n_steps = int((X.shape[0] / 10)/config.batch_size)
     # Initialize the model based on the objective and model name
     model = MODEL_DICT[config.objective][config.model](
         batch_size=config.batch_size,
@@ -190,9 +193,10 @@ def main():
             ],
             "enable_progress_bar": False,
             "val_check_interval": 0.1,
-            "log_every_n_steps": 20,
+            "log_every_n_steps": log_every_n_steps,
         },
         optimizer_kwargs={"optimizer": wandb.config.optimizer},
+        dataloader_kwargs={"shuffle": True},
     )
     # Set the gamma parameter if using GammaEigenGame model
     if config.model == "gamma":

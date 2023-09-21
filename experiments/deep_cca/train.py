@@ -2,6 +2,7 @@ import os
 
 import pytorch_lightning as pl
 import torch
+from cca_zoo.data.deep import NumpyDataset
 from cca_zoo.deep import DCCA, DCCA_NOI, DCCA_EY, architectures
 from cca_zoo.deep.callbacks import (
     BatchTrainCorrelationCallback,
@@ -19,14 +20,14 @@ WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb
 defaults = dict(
-    data="SplitMNIST",
+    data="sim",
     mnist_type="MNIST",
-    lr=0.001,
-    batch_size=10,
+    lr=0.00001,
+    batch_size=100,
     latent_dims=50,
     epochs=50,
     model="DCCAEY",
-    architecture="linear",
+    architecture="nonlinear",
     rho=0.1,
     random_seed=1,
     optimizer="adam",
@@ -39,6 +40,22 @@ MODEL_DICT = {
     "DCCANOI": DCCA_NOI,
     "DCCAEY": DCCA_EY,
 }
+
+# class EYCallback(pl.Callback):
+#     def __init__(self, train_views):
+#         self.train_views = train_views
+#         self.train_views = [torch.Tensor(view) for view in self.train_views]
+#
+#     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+#         self.train_views = [view.to(pl_module.device) for view in self.train_views]
+#         with torch.no_grad():
+#             loss=pl_module.loss(self.train_views)
+#             for k, v in loss.items():
+#                 # Use f-string instead of concatenation
+#                 self.log(
+#                     f"batch/{k}",
+#                     v,
+#                 )
 
 
 def main():
@@ -74,6 +91,13 @@ def main():
         test_dataset = NoisyMNIST(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
+    elif config.data == "sim":
+        import numpy as np
+        feature_size = [784,784]
+        X=np.random.randn(1000,784)
+        Y=np.random.randn(1000,784)
+        train_dataset = NumpyDataset((X,Y))
+        test_dataset = NumpyDataset((X,Y))
     else:
         raise ValueError("dataset not supported")
 
@@ -92,7 +116,7 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config.batch_size,
-        shuffle=False,
+        shuffle=True,
         num_workers=num_workers,
         pin_memory=True,
         persistent_workers=persistent_workers,
@@ -100,7 +124,7 @@ def main():
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
         batch_size=config.batch_size,
-        shuffle=False,
+        shuffle=True,
         num_workers=num_workers,
         pin_memory=True,
         persistent_workers=persistent_workers,
@@ -173,10 +197,8 @@ def main():
             os.getcwd(), config.model, f"{config.batch_size}", f"{config.lr}"
         ),
         enable_checkpointing=False,
-        log_every_n_steps=1000,
-        enable_progress_bar=False,
-        callbacks=[BatchTrainCorrelationCallback(), BatchValidationCorrelationCallback()],
-        profiler="simple",
+        enable_progress_bar=True,
+        callbacks=[BatchTrainCorrelationCallback(), BatchValidationCorrelationCallback()],#, EYCallback((X,Y))],
     )
 
     trainer.fit(dcca, train_loader, test_loader)
