@@ -15,7 +15,7 @@ defaults = {
     "data": "mnist",
     "objective": "cca",
     "seed": 5,
-    "components": 5,
+    "components": 10,
     "batch_size": 100,
     "epochs": 10,
     "lr": 1e-3,
