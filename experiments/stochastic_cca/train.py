@@ -163,7 +163,7 @@ def main():
         trainer_kwargs={"logger": WandbLogger(),
                         "callbacks": [CorrelationCapturedCallback(true, train_views, val_views=val_views),
                                       SampleCounterCallback()],
-                        "enable_progress_bar": True,
+                        "enable_progress_bar": False,
                         "val_check_interval": 0.1},
         optimizer_kwargs={"optimizer": wandb.config.optimizer},
 
