@@ -164,7 +164,8 @@ def main():
                         "callbacks": [CorrelationCapturedCallback(true, train_views, val_views=val_views),
                                       SampleCounterCallback()],
                         "enable_progress_bar": False,
-                        "val_check_interval": 0.1},
+                        "val_check_interval": 0.1,
+                        "log_every_n_steps": 20},
         optimizer_kwargs={"optimizer": wandb.config.optimizer},
 
     )
