@@ -20,19 +20,40 @@ WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb
 defaults = dict(
-    data="sim",
+    data="XRMB",
     mnist_type="MNIST",
     lr=0.0001,
-    batch_size=100,
+    batch_size=10,
     latent_dims=50,
     epochs=25,
     model="DCCANOI",
     architecture="linear",
     rho=0.9,
     random_seed=1,
-    optimizer="sgd",
-    num_workers=4,
+    optimizer="adam",
+    num_workers=-4,
 )
+
+
+class IndependentMixin:
+    def __getitem__(self, index):
+        views = super().__getitem__(index)
+        independent_index = self.random_state.randint(0, len(self))
+        independent_views = super().__getitem__(independent_index)
+        return {"views": views, "independent_views": independent_views}
+
+
+class XRMB_(XRMB, IndependentMixin):
+    pass
+
+
+class NoisyMNIST_(NoisyMNIST, IndependentMixin):
+    pass
+
+
+class SplitMNIST_(SplitMNIST, IndependentMixin):
+    pass
+
 
 # Define a dictionary to map model names to classes
 MODEL_DICT = {
@@ -40,22 +61,6 @@ MODEL_DICT = {
     "DCCANOI": DCCA_NOI,
     "DCCAEY": DCCA_EY,
 }
-
-# class EYCallback(pl.Callback):
-#     def __init__(self, train_views):
-#         self.train_views = train_views
-#         self.train_views = [torch.Tensor(view) for view in self.train_views]
-#
-#     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-#         self.train_views = [view.to(pl_module.device) for view in self.train_views]
-#         with torch.no_grad():
-#             loss=pl_module.loss(self.train_views)
-#             for k, v in loss.items():
-#                 # Use f-string instead of concatenation
-#                 self.log(
-#                     f"batch/{k}",
-#                     v,
-#                 )
 
 
 def main():
@@ -73,31 +78,32 @@ def main():
     # Load the data according to the configuration parameter
     if config.data == "XRMB":
         feature_size = [273, 112]
-        train_dataset = XRMB(root=os.getcwd(), train=True, download=True)
-        test_dataset = XRMB(root=os.getcwd(), train=False, download=True)
+        train_dataset = XRMB_(root=os.getcwd(), train=True, download=True)
+        test_dataset = XRMB_(root=os.getcwd(), train=False, download=True)
     elif config.data == "SplitMNIST":
         feature_size = [392, 392]
-        train_dataset = SplitMNIST(
+        train_dataset = SplitMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=True
         )
-        test_dataset = SplitMNIST(
+        test_dataset = SplitMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
     elif config.data == "NoisyMNIST":
         feature_size = [784, 784]
-        train_dataset = NoisyMNIST(
+        train_dataset = NoisyMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=True, download=True
         )
-        test_dataset = NoisyMNIST(
+        test_dataset = NoisyMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
     elif config.data == "sim":
         import numpy as np
-        feature_size = [784,784]
-        X=np.random.randn(1000,784)
-        Y=np.random.randn(1000,784)
-        train_dataset = NumpyDataset((X,Y))
-        test_dataset = NumpyDataset((X,Y))
+
+        feature_size = [784, 784]
+        X = np.random.randn(1000, 784)
+        Y = np.random.randn(1000, 784)
+        train_dataset = NumpyDataset((X, Y))
+        test_dataset = NumpyDataset((X, Y))
     else:
         raise ValueError("dataset not supported")
 
@@ -141,7 +147,6 @@ def main():
             latent_dimensions=config.latent_dims, feature_size=feature_size[1]
         )
     elif config.architecture == "nonlinear":
-
         # Use nonlinear encoders with hidden layers for each view
         encoder_1 = architectures.Encoder(
             latent_dimensions=config.latent_dims,
@@ -158,7 +163,6 @@ def main():
 
     # Create the model according to the configuration parameter
     if config.model == "DCCANOI":
-
         # Use DCCA with noise injection regularization
         dcca = DCCA_NOI(
             latent_dimensions=config.latent_dims,
@@ -169,7 +173,6 @@ def main():
             optimizer=config.optimizer,
         )
     elif config.model == "DCCA":
-
         # Use standard DCCA with CCA objective
         dcca = DCCA(
             latent_dimensions=config.latent_dims,
@@ -180,7 +183,6 @@ def main():
             objective=CCA,
         )
     else:
-
         # Use a custom model from the model dictionary
         dcca = MODEL_DICT[config.model](
             latent_dimensions=config.latent_dims,
@@ -198,11 +200,15 @@ def main():
         ),
         enable_checkpointing=False,
         enable_progress_bar=False,
-        callbacks=[BatchTrainCorrelationCallback(), BatchValidationCorrelationCallback()],#, EYCallback((X,Y))],
+        callbacks=[
+            BatchTrainCorrelationCallback(),
+            BatchValidationCorrelationCallback(),
+        ],  # , EYCallback((X,Y))],
     )
 
     trainer.fit(dcca, train_loader, test_loader)
     wandb.finish()
+
 
 if __name__ == "__main__":
     main()
