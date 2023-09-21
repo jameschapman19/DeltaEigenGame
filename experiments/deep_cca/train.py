@@ -26,12 +26,12 @@ defaults = dict(
     batch_size=10,
     latent_dims=50,
     epochs=25,
-    model="DCCANOI",
+    model="DCCAEY",
     architecture="linear",
     rho=0.9,
     random_seed=1,
     optimizer="adam",
-    num_workers=-4,
+    num_workers=4,
 )
 
 
@@ -164,7 +164,6 @@ def main():
 
     # Create the model according to the configuration parameter
     if config.model == "DCCANOI":
-        # Use DCCA with noise injection regularization
         dcca = DCCA_NOI(
             latent_dimensions=config.latent_dims,
             N=len(train_dataset),

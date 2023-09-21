@@ -40,7 +40,7 @@ DIMENSIONS = {
 
 
 def get_best_runs(
-        data="mnist", batch_size=100, objective="PCC", mode="Train", lr=None
+        data="mnist", batch_size=100, objective="PCC", mode="Train", lr=None, seed=None
 ):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
@@ -48,6 +48,8 @@ def get_best_runs(
     summary_df = summary_df.loc[summary_df["batch_size"] == batch_size]
     if lr is not None:
         summary_df = summary_df.loc[summary_df["lr"] == lr]
+    if seed is not None:
+        summary_df = summary_df.loc[summary_df["seed"] == seed]
     # get average over random seeds
     best_df = (
         summary_df.fillna(np.inf)
@@ -68,7 +70,11 @@ def get_best_runs(
     return df
 
 
-def plot_pcc(data="mnist", batch_size=100, lr=None):
+def plot_pcc(data="mnist", batch_size=100, lr=None, time=False):
+    if time:
+        seed = 1
+    else:
+        seed = None
     # Plot PCC for best runs for each model
     df = get_best_runs(
         data=data,
@@ -76,25 +82,36 @@ def plot_pcc(data="mnist", batch_size=100, lr=None):
         objective="PCC",
         mode="Train",
         lr=lr,
+        seed=seed
     )
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     df = df.rename(columns={"batch_size": "batch size"})
     df = df.rename(columns={"train/PCC": "Train PCC"})
     df = df.rename(columns={"samples_seen": "Samples Seen"})
+    df = df.rename(columns={"_runtime": "Time"})
     # Fill NaN values in "Samples Seen" column with previous values
     df["Samples Seen"].fillna(method="ffill", inplace=True)
     # drop rows with Nan in "Train PCC" column
     df = df.dropna(subset=["Train PCC"])
     # figure that is shorter than it is wide
     plt.figure(figsize=(10, 5))
-    sns.lineplot(
-        data=df,
-        x="Samples Seen",
-        y="Train PCC",
-        hue="model",
-        hue_order=ORDER,
-    )
+    if time:
+        sns.lineplot(
+            data=df,
+            x="Time",
+            y="Train PCC",
+            hue="model",
+            hue_order=ORDER,
+        )
+    else:
+        sns.lineplot(
+            data=df,
+            x="Samples Seen",
+            y="Train PCC",
+            hue="model",
+            hue_order=ORDER,
+        )
     plt.title(
         rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
     )
@@ -102,10 +119,12 @@ def plot_pcc(data="mnist", batch_size=100, lr=None):
         lr = "tuned"
     plt.ylim(0, 1)
     plt.tight_layout()
+    if time:
+        plt.savefig(f"plots/{data}_{batch_size}_pcc_time_lr_{lr}.svg")
     plt.savefig(f"plots/{data}_{batch_size}_pcc_lr_{lr}.svg")
 
 
-def plot_minibatch_size_ablation(data="mnist", optimizer="Adam"):
+def plot_minibatch_size_ablation(data="mnist", optimizer="Adam", time=False):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df["data"] == data]
@@ -139,6 +158,7 @@ def plot_minibatch_size_ablation(data="mnist", optimizer="Adam"):
     # drop rows with Nan in "Train PCC" column
     df = df.dropna(subset=["Train PCC"])
     plt.figure(figsize=(10, 5))
+
     sns.lineplot(
         data=df,
         x="Samples Seen",
@@ -190,5 +210,5 @@ if __name__ == '__main__':
     # plot_minibatch_size_ablation("cifar")
     for data in ["mediamill","cifar"]:
         for batch_size in [100, 50, 20, 5]:
-            plot_pcc(data, batch_size)
+            plot_pcc(data, batch_size, time=True)
 
