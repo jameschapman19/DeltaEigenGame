@@ -174,7 +174,7 @@ def main():
         ),
         enable_checkpointing=False,
         log_every_n_steps=1000,
-        enable_progress_bar=True,
+        enable_progress_bar=False,
         callbacks=[BatchTrainCorrelationCallback(), BatchValidationCorrelationCallback()],
         profiler="simple",
     )
