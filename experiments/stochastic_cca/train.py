@@ -12,7 +12,7 @@ from src.data_utils import load_mnist, load_mediamill, load_cifar
 # Define default hyperparameters
 defaults = {
     "model": "ey",
-    "data": "synthetic",
+    "data": "cifar",
     "objective": "cca",
     "seed": 5,
     "components": 5,

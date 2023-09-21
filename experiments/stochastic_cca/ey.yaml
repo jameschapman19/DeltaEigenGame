@@ -12,7 +12,7 @@ parameters:
   model:
     values: [ey,gha]
   data:
-    values: [mnist,cifar,mediamill]
+    values: [cifar,mediamill]
   batch_size:
     values: [ 100, 50, 20, 5 ]
   seed:
