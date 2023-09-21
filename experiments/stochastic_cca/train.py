@@ -6,7 +6,7 @@ from lightning.pytorch.loggers import WandbLogger
 from pytorch_lightning import Callback
 
 import wandb
-from src import cca
+from src.cca import GammaEigenGame
 from src.data_utils import load_mnist, load_mediamill, load_cifar
 
 # Define default hyperparameters
@@ -25,7 +25,7 @@ defaults = {
 
 MODEL_DICT = {
     "cca": {
-        "gamma": cca.GammaEigenGame,
+        "gamma": GammaEigenGame,
         "saa": rCCA,
         "gha": CCA_GHA,
         "ey": CCA_EY,
