@@ -17,7 +17,7 @@ defaults = {
     "seed": 5,
     "components": 1,
     "batch_size": 5,
-    "epochs": 500,
+    "epochs": 1,
     "lr": 1e-5,
     "gamma": 1e-3,
     "optimizer": "Adam",
