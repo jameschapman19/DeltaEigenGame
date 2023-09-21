@@ -8,13 +8,13 @@ project: DeepCCA
 method: grid
 parameters:
   data:
-    values: [ 'SplitMNIST','XRMB' ]
+    values: [ 'XRMB' ]
   architecture:
     values: [ 'nonlinear' ]
   batch_size:
     values: [ 100, 50, 20, 5 ]
   lr:
-    values: [1e-2, 1e-3, 1e-4 ]
+    values: [1e-4, 1e-5 ]
   model:
     values: [ 'DCCAEY' ]
   optimizer:
