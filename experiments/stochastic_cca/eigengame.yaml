@@ -15,6 +15,7 @@ parameters:
       - gamma
   data:
     values:
+      - mnist
       - cifar
       - mediamill
   batch_size:

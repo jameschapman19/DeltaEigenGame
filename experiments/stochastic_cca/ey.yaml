@@ -16,6 +16,7 @@ parameters:
       - gha
   data:
     values:
+      - mnist
       - cifar
       - mediamill
   batch_size:

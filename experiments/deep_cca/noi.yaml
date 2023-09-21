@@ -17,7 +17,5 @@ parameters:
     values: [ 1e-1, 1e-2, 1e-3, 1e-4 ]
   model:
     values: [ 'DCCANOI' ]
-  random_seed:
-    values: [ 1,2,3,4,5 ]
   rho:
     values: [ 0.6, 0.8, 0.9 ]

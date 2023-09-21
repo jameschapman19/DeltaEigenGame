@@ -11,16 +11,16 @@ from src.data_utils import load_mnist, load_mediamill, load_cifar
 
 # Define default hyperparameters
 defaults = {
-    "model": "gamma",
-    "data": "cifar",
+    "model": "ey",
+    "data": "mnist",
     "objective": "cca",
     "seed": 5,
     "components": 10,
     "batch_size": 100,
     "epochs": 5,
-    "lr": 1e-4,
+    "lr": 1e-2,
     "gamma": 1e-3,
-    "optimizer": "SGD",
+    "optimizer": "Adam",
 }
 
 MODEL_DICT = {
@@ -38,7 +38,12 @@ class SampleCounterCallback(Callback):
         self.samples_seen = 0
 
     def on_train_batch_end(
-            self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs, batch, batch_idx: int
+        self,
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
+        outputs,
+        batch,
+        batch_idx: int,
     ):
         self.samples_seen += pl_module.batch_size
         pl_module.log("samples_seen", self.samples_seen)
@@ -50,11 +55,13 @@ class CorrelationCapturedCallback(Callback):
         self.train_views = train_views
         self.val_views = val_views
 
-    def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+    def on_validation_start(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
+    ) -> None:
         mcca = MCCA(pl_module.latent_dimensions)
         mcca.weights = [w.detach().cpu().numpy() for w in pl_module.torch_weights]
         mcca.n_views_ = len(self.train_views)
-        z_train= mcca.transform(self.train_views)
+        z_train = mcca.transform(self.train_views)
         if self.val_views is not None:
             z_val = mcca.transform(self.val_views)
         train_tcc = mcca.fit(z_train).score(z_train)
@@ -79,7 +86,9 @@ def load_scores(filename):
 
 def try_load_or_fit_cca(data_config, train_views, X_test=None, Y_test=None):
     """Try loading existing scores, fit a new CCA model otherwise."""
-    train_filename = f"results/{data_config.data}_{data_config.objective}_score_train.npy"
+    train_filename = (
+        f"results/{data_config.data}_{data_config.objective}_score_train.npy"
+    )
     val_filename = f"results/{data_config.data}_{data_config.objective}_score_test.npy"
 
     if data_config.data == "synthetic":
@@ -91,15 +100,11 @@ def try_load_or_fit_cca(data_config, train_views, X_test=None, Y_test=None):
     elif data_config.data == "mediamill":
         try:
             # Try to load existing scores
-            return {
-                "train": load_scores(train_filename)
-            }
+            return {"train": load_scores(train_filename)}
         except FileNotFoundError:
             cca = fit_cca(data_config, train_views)
             np.save(train_filename, cca.score(train_views))
-            return {
-                "train": load_scores(train_filename)
-            }
+            return {"train": load_scores(train_filename)}
     else:
         try:
             # Try to load existing scores
@@ -121,6 +126,7 @@ def try_load_or_fit_cca(data_config, train_views, X_test=None, Y_test=None):
                 "val": load_scores(val_filename),
             }
 
+
 def main():
     # Initialize wandb with the default configuration
     wandb.init(config=defaults, project="StochasticCCA")
@@ -130,8 +136,8 @@ def main():
 
     # Load the data based on the data name
     if wandb.config.data == "synthetic":
-        dataset=LinearSimulatedData(view_features=[10, 10], latent_dims=3)
-        X, Y = dataset.sample(10000)
+        dataset = LinearSimulatedData(view_features=[1000, 1000], latent_dims=5)
+        X, Y = dataset.sample(1000)
         X_test, Y_test = dataset.sample(1000)
 
     elif wandb.config.data == "cifar":
@@ -165,9 +171,9 @@ def main():
         val_views = [X[:1000], Y[:1000]]
 
     true = try_load_or_fit_cca(wandb.config, train_views, X_test, Y_test)
-    true["train"] = true["train"][:wandb.config.components].sum()
+    true["train"] = true["train"][: wandb.config.components].sum()
     if X_test is not None:
-        true["val"] = true["val"][:wandb.config.components].sum()
+        true["val"] = true["val"][: wandb.config.components].sum()
 
     # Initialize the model based on the objective and model name
     model = MODEL_DICT[config.objective][config.model](
@@ -176,14 +182,17 @@ def main():
         learning_rate=config.lr,
         latent_dimensions=config.components,
         random_state=config.seed,
-        trainer_kwargs={"logger": WandbLogger(),
-                        "callbacks": [CorrelationCapturedCallback(true, train_views, val_views=val_views),
-                                      SampleCounterCallback()],
-                        "enable_progress_bar": False,
-                        "val_check_interval": 0.1,
-                        "log_every_n_steps": 20},
+        trainer_kwargs={
+            "logger": WandbLogger(),
+            "callbacks": [
+                CorrelationCapturedCallback(true, train_views, val_views=val_views),
+                SampleCounterCallback(),
+            ],
+            "enable_progress_bar": False,
+            "val_check_interval": 0.1,
+            "log_every_n_steps": 20,
+        },
         optimizer_kwargs={"optimizer": wandb.config.optimizer},
-
     )
     # Set the gamma parameter if using GammaEigenGame model
     if config.model == "gamma":
