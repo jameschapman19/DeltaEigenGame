@@ -94,6 +94,8 @@ def plot_pcc(data="mnist", batch_size=100, lr=None, time=False):
     df["Samples Seen"].fillna(method="ffill", inplace=True)
     # drop rows with Nan in "Train PCC" column
     df = df.dropna(subset=["Train PCC"])
+    # subtract minimum time for each model from time
+    df["Time"] = df.groupby("model")["Time"].transform(lambda x: x - x.min())
     # figure that is shorter than it is wide
     plt.figure(figsize=(10, 5))
     if time:

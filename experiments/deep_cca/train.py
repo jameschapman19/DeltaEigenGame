@@ -1,32 +1,32 @@
 import os
 
+import numpy as np
 import pytorch_lightning as pl
 import torch
-from cca_zoo.data.deep import NumpyDataset
+import wandb
 from cca_zoo.deep import DCCA, DCCA_NOI, DCCA_EY, architectures
 from cca_zoo.deep.callbacks import (
     BatchTrainCorrelationCallback,
     BatchValidationCorrelationCallback,
 )
 from cca_zoo.deep.objectives import CCA
+from cca_zoo.linear._gradient._ey import DoubleNumpyDataset
 from multiviewdata.torchdatasets import NoisyMNIST, SplitMNIST, XRMB
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import random_split
-import numpy as np
-import wandb
 
 WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb
 defaults = dict(
-    data="SplitMNIST",
+    data="XRMB",
     mnist_type="MNIST",
     lr=0.0001,
-    batch_size=10,
+    batch_size=100,
     latent_dims=50,
-    epochs=25,
-    model="DCCAEY",
+    epochs=50,
+    model="DCCANOI",
     architecture="linear",
     rho=0.9,
     random_seed=1,
@@ -81,6 +81,7 @@ def main():
         feature_size = [273, 112]
         train_dataset = XRMB_(root=os.getcwd(), train=True, download=True)
         test_dataset = XRMB_(root=os.getcwd(), train=False, download=True)
+        config.latent_dims=112
     elif config.data == "SplitMNIST":
         feature_size = [392, 392]
         train_dataset = SplitMNIST_(
@@ -89,6 +90,7 @@ def main():
         test_dataset = SplitMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
+        config.latent_dims=50
     elif config.data == "NoisyMNIST":
         feature_size = [784, 784]
         train_dataset = NoisyMNIST_(
@@ -97,14 +99,15 @@ def main():
         test_dataset = NoisyMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
+        config.latent_dims=50
     elif config.data == "sim":
         import numpy as np
 
         feature_size = [784, 784]
         X = np.random.randn(1000, 784)
         Y = np.random.randn(1000, 784)
-        train_dataset = NumpyDataset((X, Y))
-        test_dataset = NumpyDataset((X, Y))
+        train_dataset = DoubleNumpyDataset((X, Y))
+        test_dataset = DoubleNumpyDataset((X, Y))
     else:
         raise ValueError("dataset not supported")
 
@@ -148,17 +151,30 @@ def main():
             latent_dimensions=config.latent_dims, feature_size=feature_size[1]
         )
     elif config.architecture == "nonlinear":
-        # Use nonlinear encoders with hidden layers for each view
-        encoder_1 = architectures.Encoder(
-            latent_dimensions=config.latent_dims,
-            layer_sizes=(800, 800),
-            feature_size=feature_size[0],
-        )
-        encoder_2 = architectures.Encoder(
-            latent_dimensions=config.latent_dims,
-            layer_sizes=(800, 800),
-            feature_size=feature_size[1],
-        )
+        if config.data == "XRMB":
+            # Use nonlinear encoders with hidden layers for each view
+            encoder_1 = architectures.Encoder(
+                latent_dimensions=config.latent_dims,
+                layer_sizes=(1800, 1800),
+                feature_size=feature_size[0],
+            )
+            encoder_2 = architectures.Encoder(
+                latent_dimensions=config.latent_dims,
+                layer_sizes=(1200, 1200),
+                feature_size=feature_size[1],
+            )
+        else:
+            # Use nonlinear encoders with hidden layers for each view
+            encoder_1 = architectures.Encoder(
+                latent_dimensions=config.latent_dims,
+                layer_sizes=(800, 800),
+                feature_size=feature_size[0],
+            )
+            encoder_2 = architectures.Encoder(
+                latent_dimensions=config.latent_dims,
+                layer_sizes=(800, 800),
+                feature_size=feature_size[1],
+            )
     else:
         raise ValueError("architecture not supported")
 
