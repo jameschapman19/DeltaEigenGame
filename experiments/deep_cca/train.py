@@ -24,10 +24,9 @@ defaults = dict(
     mnist_type="MNIST",
     lr=0.0001,
     batch_size=100,
-    latent_dims=50,
     epochs=50,
     model="DCCANOI",
-    architecture="nonlinear",
+    architecture="linear",
     rho=0.9,
     random_seed=1,
     optimizer="adam",
@@ -81,7 +80,7 @@ def main():
         feature_size = [273, 112]
         train_dataset = XRMB_(root=os.getcwd(), train=True, download=True)
         test_dataset = XRMB_(root=os.getcwd(), train=False, download=True)
-        config.latent_dims=112
+        latent_dims=112
     elif config.data == "SplitMNIST":
         feature_size = [392, 392]
         train_dataset = SplitMNIST_(
@@ -90,7 +89,7 @@ def main():
         test_dataset = SplitMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
-        config.latent_dims=50
+        latent_dims=50
     elif config.data == "NoisyMNIST":
         feature_size = [784, 784]
         train_dataset = NoisyMNIST_(
@@ -99,7 +98,7 @@ def main():
         test_dataset = NoisyMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
-        config.latent_dims=50
+        latent_dims=50
     elif config.data == "sim":
         import numpy as np
 
@@ -108,6 +107,7 @@ def main():
         Y = np.random.randn(1000, 784)
         train_dataset = DoubleNumpyDataset((X, Y))
         test_dataset = DoubleNumpyDataset((X, Y))
+        latent_dims=50
     else:
         raise ValueError("dataset not supported")
 
@@ -144,34 +144,34 @@ def main():
     if config.architecture == "linear":
         # Use linear encoders for each view
         encoder_1 = architectures.LinearEncoder(
-            latent_dimensions=config.latent_dims, feature_size=feature_size[0]
+            latent_dimensions=latent_dims, feature_size=feature_size[0]
         )
 
         encoder_2 = architectures.LinearEncoder(
-            latent_dimensions=config.latent_dims, feature_size=feature_size[1]
+            latent_dimensions=latent_dims, feature_size=feature_size[1]
         )
     elif config.architecture == "nonlinear":
         if config.data == "XRMB":
             # Use nonlinear encoders with hidden layers for each view
             encoder_1 = architectures.Encoder(
-                latent_dimensions=config.latent_dims,
+                latent_dimensions=latent_dims,
                 layer_sizes=(1800, 1800),
                 feature_size=feature_size[0],
             )
             encoder_2 = architectures.Encoder(
-                latent_dimensions=config.latent_dims,
+                latent_dimensions=latent_dims,
                 layer_sizes=(1200, 1200),
                 feature_size=feature_size[1],
             )
         else:
             # Use nonlinear encoders with hidden layers for each view
             encoder_1 = architectures.Encoder(
-                latent_dimensions=config.latent_dims,
+                latent_dimensions=latent_dims,
                 layer_sizes=(800, 800),
                 feature_size=feature_size[0],
             )
             encoder_2 = architectures.Encoder(
-                latent_dimensions=config.latent_dims,
+                latent_dimensions=latent_dims,
                 layer_sizes=(800, 800),
                 feature_size=feature_size[1],
             )
@@ -181,7 +181,7 @@ def main():
     # Create the model according to the configuration parameter
     if config.model == "DCCANOI":
         dcca = DCCA_NOI(
-            latent_dimensions=config.latent_dims,
+            latent_dimensions=latent_dims,
             N=len(train_dataset),
             encoders=[encoder_1, encoder_2],
             lr=config.lr,
@@ -191,7 +191,7 @@ def main():
     elif config.model == "DCCA":
         # Use standard DCCA with CCA objective
         dcca = DCCA(
-            latent_dimensions=config.latent_dims,
+            latent_dimensions=latent_dims,
             encoders=[encoder_1, encoder_2],
             lr=config.lr,
             rho=config.rho,
@@ -201,7 +201,7 @@ def main():
     else:
         # Use a custom model from the model dictionary
         dcca = MODEL_DICT[config.model](
-            latent_dimensions=config.latent_dims,
+            latent_dimensions=latent_dims,
             encoders=[encoder_1, encoder_2],
             lr=config.lr,
             optimizer=config.optimizer,
