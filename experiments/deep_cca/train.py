@@ -20,14 +20,14 @@ WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb
 defaults = dict(
-    data="XRMB",
+    data="SplitMNIST",
     mnist_type="MNIST",
     lr=0.0001,
     batch_size=100,
     latent_dims=50,
     epochs=50,
     model="DCCANOI",
-    architecture="linear",
+    architecture="nonlinear",
     rho=0.9,
     random_seed=1,
     optimizer="adam",
