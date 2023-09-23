@@ -20,12 +20,12 @@ WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb
 defaults = dict(
-    data="SplitMNIST",
+    data="sim",
     mnist_type="MNIST",
     lr=0.0001,
     batch_size=100,
     epochs=50,
-    model="DCCANOI",
+    model="DCCAEY",
     architecture="linear",
     rho=0.9,
     random_seed=1,
@@ -105,8 +105,9 @@ def main():
         feature_size = [784, 784]
         X = np.random.randn(1000, 784)
         Y = np.random.randn(1000, 784)
-        train_dataset = DoubleNumpyDataset((X, Y))
-        test_dataset = DoubleNumpyDataset((X, Y))
+        Z = np.random.randn(1000, 784)
+        train_dataset = DoubleNumpyDataset((X, Y, Z))
+        test_dataset = DoubleNumpyDataset((X, Y, Z))
         latent_dims=50
     else:
         raise ValueError("dataset not supported")

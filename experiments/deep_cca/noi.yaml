@@ -18,4 +18,4 @@ parameters:
   model:
     values: [ 'DCCANOI' ]
   rho:
-    values: [ 0.2,0.6, 0.8, 0.9 ]
+    values: [ 0.4, 0.6, 0.8, 0.9, 0.99, 0.999 ]

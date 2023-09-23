@@ -10,11 +10,12 @@ import seaborn as sns
 from src.wandb_utils import get_summary, get_run_data
 
 # Set a consistent color scheme for NeurIPS paper
-colors = sns.color_palette("colorblind")
-sns.set_palette(colors)
-continuous_palette = sns.color_palette("cividis", as_cmap=True)
+palette = "colorblind"
+colorblind_palette = sns.color_palette(palette, as_cmap=True)
 sns.set_style("whitegrid")
-sns.set_context("paper", font_scale=2.0, rc={"lines.linewidth": 2.5, "axes.labelsize": 16})
+sns.set_context(
+    "paper", font_scale=2.0, rc={"lines.linewidth": 2.5, "axes.labelsize": 16}
+)
 # sns tight layout
 
 PROJECT = "StochasticCCA"
@@ -40,7 +41,7 @@ DIMENSIONS = {
 
 
 def get_best_runs(
-        data="mnist", batch_size=100, objective="PCC", mode="Train", lr=None, seed=None
+    data="mnist", batch_size=100, objective="PCC", mode="Train", lr=None, seed=None
 ):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
@@ -82,7 +83,7 @@ def plot_pcc(data="mnist", batch_size=100, lr=None, time=False):
         objective="PCC",
         mode="Train",
         lr=lr,
-        seed=seed
+        seed=seed,
     )
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
@@ -105,6 +106,7 @@ def plot_pcc(data="mnist", batch_size=100, lr=None, time=False):
             y="Train PCC",
             hue="model",
             hue_order=ORDER,
+            palette=sns.color_palette(palette, n_colors=3),
         )
     else:
         sns.lineplot(
@@ -113,6 +115,7 @@ def plot_pcc(data="mnist", batch_size=100, lr=None, time=False):
             y="Train PCC",
             hue="model",
             hue_order=ORDER,
+            palette=sns.color_palette(palette, n_colors=3),
         )
     plt.title(
         rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
@@ -146,9 +149,7 @@ def plot_minibatch_size_ablation(data="mnist", optimizer="Adam", time=False):
     best_lr_per_batch = best_df.groupby("batch_size")["train/PCC"].idxmax()
     best_lr_df = best_df.loc[best_lr_per_batch]
     # get run data for models in summary_df matching best_lr_df
-    summary_df = pd.merge(
-        best_lr_df, summary_df, on=["lr", "batch_size"], how="left"
-    )
+    summary_df = pd.merge(best_lr_df, summary_df, on=["lr", "batch_size"], how="left")
     df = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
@@ -159,33 +160,56 @@ def plot_minibatch_size_ablation(data="mnist", optimizer="Adam", time=False):
     df["Samples Seen"].fillna(method="ffill", inplace=True)
     # drop rows with Nan in "Train PCC" column
     df = df.dropna(subset=["Train PCC"])
+    # Apply logarithmic transformation to 'lr'
+    df["log_batch_size"] = np.log10(df["batch size"])
     plt.figure(figsize=(10, 5))
-
-    sns.lineplot(
+    sns_plot = sns.lineplot(
         data=df,
         x="Samples Seen",
         y="Train PCC",
-        hue="batch size",
+        hue="log_batch_size",
         # hue color palette
-        palette=continuous_palette,
+        palette=colorblind_palette,
     )
+    # Get the handles and labels of the current plot's legend
+    handles, labels = sns_plot.get_legend_handles_labels()
+
+    # Map the transformed 'log_lr' back to original 'lr' for legend labels
+    new_labels = [
+        int(10 ** float(label)) for label in labels
+    ]  # Skip the first label which is 'log_lr'
+
+    # Update the legend
+    sns_plot.legend(
+        handles, new_labels, title="lr"
+    )  # Skip the first handle which is 'log_lr'
     plt.ylim(0, 1)
     plt.title(
         rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
     )
     plt.savefig(f"plots/{data}_minibatch_size_ablation.svg")
 
-def plot_learning_rate_ablation(
-    data="mnist", batch_size=100, optimizer="Adam"
-):
+
+def plot_optimizer_ablation(data="mnist", batch_size=100):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df["data"] == data]
     summary_df = summary_df.loc[summary_df["batch_size"] == batch_size]
     summary_df = summary_df.loc[summary_df["model"] == "ey"]
-    summary_df = summary_df.loc[summary_df["optimizer"] == optimizer]
-
-
+    # get average over random seeds
+    best_df = (
+        summary_df.fillna(np.inf)
+        .groupby(["lr", "optimizer"])[f"train/PCC"]
+        .mean()
+        .replace(np.inf, np.nan)
+        .dropna()
+        .reset_index()
+    )
+    # Find the best lr for each optimizer based on train/PCC
+    best_lr_per_batch = best_df.groupby("optimizer")["train/PCC"].idxmax()
+    best_lr_df = best_df.loc[best_lr_per_batch]
+    # get run data for models in summary_df matching best_lr_df
+    summary_df = pd.merge(best_lr_df, summary_df, on=["lr", "optimizer"], how="left")
     df = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
@@ -201,16 +225,74 @@ def plot_learning_rate_ablation(
         data=df,
         x="Samples Seen",
         y="Train PCC",
-        hue="lr",
-        # hue color palette
-        palette=continuous_palette,
+        style="optimizer",
+        palette=colorblind_palette,
     )
     plt.ylim(0, 1)
+    plt.title(
+        rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
+    )
+    plt.savefig(f"plots/{data}_optimizer_ablation.svg")
 
-if __name__ == '__main__':
+
+def plot_learning_rate_ablation(
+    data="mnist",
+    batch_size=100,
+):
+    id_df, summary_df, config_df = get_summary(project=PROJECT)
+    summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
+    summary_df = summary_df.loc[summary_df["data"] == data]
+    summary_df = summary_df.loc[summary_df["batch_size"] == batch_size]
+    summary_df = summary_df.loc[summary_df["model"] == "ey"]
+    summary_df = summary_df.loc[summary_df["optimizer"] == "Adam"]
+    # Get the best run with Adam
+    df = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
+    # map model names to titles
+    df["model"] = df["model"].map(MODEL_TO_TITLE)
+    df = df.rename(columns={"batch_size": "batch size"})
+    df = df.rename(columns={"train/PCC": "Train PCC"})
+    df = df.rename(columns={"samples_seen": "Samples Seen"})
+    # Fill NaN values in "Samples Seen" column with previous values
+    df["Samples Seen"].fillna(method="ffill", inplace=True)
+    # drop rows with Nan in "Train PCC" column
+    df = df.dropna(subset=["Train PCC"])
+    # Apply logarithmic transformation to 'lr'
+    df["log_lr"] = np.log10(df["lr"])
+    plt.figure(figsize=(10, 5))
+    sns_plot = sns.lineplot(
+        data=df,
+        x="Samples Seen",
+        y="Train PCC",
+        hue="log_lr",
+        # hue color palette
+        palette=colorblind_palette,
+    )
+    # Get the handles and labels of the current plot's legend
+    handles, labels = sns_plot.get_legend_handles_labels()
+
+    # Map the transformed 'log_lr' back to original 'lr' for legend labels
+    new_labels = [
+        10 ** float(label) for label in labels
+    ]  # Skip the first label which is 'log_lr'
+
+    # Update the legend
+    sns_plot.legend(
+        handles, new_labels, title="lr"
+    )  # Skip the first handle which is 'log_lr'
+    plt.ylim(0, 1)
+    plt.title(
+        rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
+    )
+    plt.savefig(f"plots/{data}_learning_rate_ablation.svg")
+
+
+if __name__ == "__main__":
+    # plot_learning_rate_ablation("mediamill")
+    # plot_learning_rate_ablation("cifar")
     # plot_minibatch_size_ablation("mediamill")
     # plot_minibatch_size_ablation("cifar")
-    for data in ["mediamill","cifar"]:
-        for batch_size in [100, 50, 20, 5]:
-            plot_pcc(data, batch_size, time=True)
-
+    plot_optimizer_ablation("mediamill")
+    plot_optimizer_ablation("cifar")
+    # for data in ["mediamill", "cifar"]:
+    #     for batch_size in [100, 50, 20, 5]:
+    #         plot_pcc(data, batch_size, time=False)

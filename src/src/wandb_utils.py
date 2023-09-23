@@ -24,6 +24,7 @@ def get_run_data(ids: Union[None, List[str]] = None, project: str = "") -> pd.Da
             history["model"] = run.config["model"]
             history["lr"] = run.config["lr"]
             history["batch_size"] = run.config["batch_size"]
+            history["optimizer"] = run.config["optimizer"]
             data.append(history)
 
     data = pd.concat(data).reset_index(drop=True)

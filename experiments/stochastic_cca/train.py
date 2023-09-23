@@ -16,10 +16,10 @@ defaults = {
     "objective": "cca",
     "seed": 5,
     "components": 5,
-    "batch_size": 5,
+    "batch_size": 2,
     "epochs": 1,
-    "lr": 1e-5,
-    "gamma": 1e-3,
+    "lr": 1e-4,
+    "gamma": 1e-4,
     "optimizer": "Adam",
 }
 
@@ -192,7 +192,7 @@ def main():
                 SampleCounterCallback(),
             ],
             "enable_progress_bar": False,
-            "val_check_interval": 0.1,
+            "val_check_interval": 0.05,
             "log_every_n_steps": log_every_n_steps,
         },
         optimizer_kwargs={"optimizer": wandb.config.optimizer},
