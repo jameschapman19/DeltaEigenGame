@@ -24,8 +24,8 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data="mfeat",
     mnist_type="MNIST",
-    lr=0.1,
-    batch_size=100,
+    lr=0.001,
+    batch_size=10,
     epochs=50,
     model="DCCAEY",
     architecture="nonlinear",
@@ -79,12 +79,13 @@ def main():
         feats= ["fac", "fou", "kar", "pix", "zer"]
         feature_size = [216, 76, 64, 240, 47]
         dataset = MFeat(root=os.getcwd(), download=True, feats=feats)
-        dataset.dataset["fac"] = dataset.dataset["fac"]/100
-        dataset.dataset["fou"] = dataset.dataset["fou"]/100
-        dataset.dataset["kar"] = dataset.dataset["kar"]/100
-        dataset.dataset["mor"] = dataset.dataset["mor"]/100
-        dataset.dataset["pix"] = dataset.dataset["pix"]/100
-        dataset.dataset["zer"] = dataset.dataset["zer"]/100
+        import numpy as np
+        dataset.dataset["fac"] = dataset.dataset["fac"]# + np.random.randn(dataset.dataset["fac"].shape[0], dataset.dataset["fac"].shape[1])*0.01
+        dataset.dataset["fou"] = dataset.dataset["fou"]# + np.random.randn(dataset.dataset["fou"].shape[0], dataset.dataset["fou"].shape[1])*0.01
+        dataset.dataset["kar"] = dataset.dataset["kar"]# + np.random.randn(dataset.dataset["kar"].shape[0], dataset.dataset["kar"].shape[1])*0.01
+        dataset.dataset["mor"] = dataset.dataset["mor"]# + np.random.randn(dataset.dataset["mor"].shape[0], dataset.dataset["mor"].shape[1])*0.01
+        dataset.dataset["pix"] = dataset.dataset["pix"]# + np.random.randn(dataset.dataset["pix"].shape[0], dataset.dataset["pix"].shape[1])*0.01
+        dataset.dataset["zer"] = dataset.dataset["zer"]# + np.random.randn(dataset.dataset["zer"].shape[0], dataset.dataset["zer"].shape[1])*0.01
         # split into train and test
         train_size = int(0.8 * len(dataset))
         test_size = len(dataset) - train_size

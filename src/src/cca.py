@@ -1,7 +1,7 @@
 import torch
 from cca_zoo.linear import CCA_EY, CCA_GHA
 
-class CCA_GHAObj(CCA_GHA):
+class DeltaEigenGame(CCA_GHA):
     def loss(self, views, independent_views=None, **kwargs):
         # Encoding the views with the forward method
         z = self(views)
@@ -18,7 +18,32 @@ class CCA_GHAObj(CCA_GHA):
             # Getting A' and B' matrices from independent_z
             independent_A, independent_B = self.get_AB(independent_z)
             # Hebbian
-            penalties = torch.trace(independent_A @ B)
+            penalties = torch.trace(A @ independent_B)
+            # penalties = torch.trace(A @ independent_B)
+        return {
+            "loss": -rewards + penalties,
+            "rewards": rewards,
+            "penalties": penalties,
+        }
+
+class SGHA2(CCA_GHA):
+    def loss(self, views, independent_views=None, **kwargs):
+        # Encoding the views with the forward method
+        z = self(views)
+        # Getting A and B matrices from z
+        A, B = self.get_AB(z)
+        rewards = torch.trace(A)
+        if independent_views is None:
+            # Hebbian
+            penalties = torch.trace(A @ B)
+            # penalties = torch.trace(A @ B)
+        else:
+            # Encoding another set of views with the forward method
+            independent_z = self(independent_views)
+            # Getting A' and B' matrices from independent_z
+            independent_A, independent_B = self.get_AB(independent_z)
+            # Hebbian
+            penalties = torch.trace(A @ independent_B)-torch.trace(independent_A)
             # penalties = torch.trace(A @ independent_B)
         return {
             "loss": -rewards + penalties,
@@ -27,19 +52,59 @@ class CCA_GHAObj(CCA_GHA):
         }
 
 class SGHA(CCA_GHA):
-    def loss(self, views, **kwargs):
-        # Encoding the views with the forward method
-        z = self(views)
-        # Getting A and B matrices from z
-        A, B = self.get_AB(z)
-        rewards = torch.trace(2 * A)
-        penalties = torch.trace(A.detach() @ B)
-        return {
-            "loss": -rewards + penalties,
-            "rewards": rewards,
-            "penalties": penalties,
-        }
+    manual_optimization = True
 
+    def training_step(self, batch, batch_idx):
+        if self.batch_size is None:
+            batch = self.batch
+        loss = self.loss(batch["views"], batch.get("independent_views", None))
+        # Logging the loss components with "train/" prefix
+        for k, v in loss.items():
+            self.log(
+                f"train/{k}",
+                v,
+                prog_bar=True,
+                on_epoch=True,
+                batch_size=batch["views"][0].shape[0],
+            )
+        v = torch.vstack([w.data for w in self.torch_weights])
+        grads = self._update_grads(batch["views"], v, batch.get("independent_views", None))
+        grads = torch.split(grads, self.n_features_)
+        for i, w in enumerate(self.torch_weights):
+            self.torch_weights[i].grad = grads[i]
+        self.optimizers().step()
+        self.optimizers().zero_grad()
+
+    def _update_grads(self, views, v, independent_views=None):
+        """
+        Update gradients based on the current views.
+
+        Args:
+            views (list): List of current views.
+        """
+        A, B = self._AB(views)
+        # A_, B_ = self._AB(independent_views)
+        Av = A @ v
+        Bv = B @ v
+
+        grads = Bv @ v.T @ Av - Av
+        return grads
+
+    def _AB(self, views):
+        """
+        Compute A and B matrices.
+
+        Args:
+            views (list): List of current views.
+
+        Returns:
+            tuple: A tuple containing A and B matrices.
+        """
+        all_views = torch.hstack(views)
+        A = torch.cov(all_views.T)
+        B = torch.block_diag(*[torch.cov(view.T) for view in views])
+        A -= B
+        return A, B
 
 
 class GammaEigenGame(CCA_EY):
@@ -100,14 +165,16 @@ class GammaEigenGame(CCA_EY):
         if self.Bv is None:
             self.Bv = Bv
         denominator = torch.diag(self.v.T @ self.Bv)
-        denominator = torch.where(denominator > self.rho, torch.sqrt(denominator), self.rho)
+        denominator = torch.where(
+            denominator > self.rho, torch.sqrt(denominator), self.rho
+        )
         y = self.v / denominator[None, :]
         By = self.Bv / denominator
         Ay = A @ y
         rewards = Av * torch.diag(self.v.T @ Bv) - Bv * torch.diag(self.v.T @ Av)
-        penalties = By @ torch.triu(Ay.T @ self.v * torch.diag(self.v.T @ Bv), 1) - Bv * torch.diag(
-            torch.tril(self.v.T @ By, -1) @ Ay.T @ self.v
-        )
+        penalties = By @ torch.triu(
+            Ay.T @ self.v * torch.diag(self.v.T @ Bv), 1
+        ) - Bv * torch.diag(torch.tril(self.v.T @ By, -1) @ Ay.T @ self.v)
         self.Bv += self.gamma * (Bv - self.Bv)
         grads = rewards - penalties
         self.v.grad = grads
@@ -127,4 +194,3 @@ class GammaEigenGame(CCA_EY):
         B = torch.block_diag(*[torch.cov(view.T) for view in views])
         A -= B
         return A, B
-

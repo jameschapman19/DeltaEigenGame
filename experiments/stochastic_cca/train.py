@@ -9,6 +9,8 @@ import wandb
 from src.cca import GammaEigenGame
 from src.data_utils import load_mnist, load_mediamill, load_cifar
 
+from src.src.cca import SGHA, DeltaEigenGame, SGHA2
+
 # Define default hyperparameters
 defaults = {
     "model": "ey",
@@ -16,9 +18,9 @@ defaults = {
     "objective": "cca",
     "seed": 5,
     "components": 5,
-    "batch_size": 2,
+    "batch_size": 100,
     "epochs": 1,
-    "lr": 1e-4,
+    "lr": 1e-3,
     "gamma": 1e-4,
     "optimizer": "Adam",
 }
@@ -29,6 +31,9 @@ MODEL_DICT = {
         "saa": rCCA,
         "gha": CCA_GHA,
         "ey": CCA_EY,
+        "delta": DeltaEigenGame,
+        "sgha": SGHA,
+        "sgha2": SGHA2
     },
 }
 
