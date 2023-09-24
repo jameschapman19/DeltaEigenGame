@@ -194,6 +194,7 @@ def main():
             "enable_progress_bar": False,
             "val_check_interval": 0.05,
             "log_every_n_steps": log_every_n_steps,
+            "enable_checkpointing": False,
         },
         optimizer_kwargs={"optimizer": wandb.config.optimizer},
         dataloader_kwargs={"shuffle": True},
