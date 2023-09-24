@@ -15,9 +15,7 @@ from multiviewdata.torchdatasets import Twitter
 from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import random_split
-
-from src.src.data_utils import MFeat
-
+from src.data_utils import MFeat
 WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb

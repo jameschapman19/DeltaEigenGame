@@ -22,14 +22,14 @@ WANDB_START_METHOD = "thread"
 defaults = dict(
     data="SplitMNIST",
     mnist_type="MNIST",
-    lr=0.00001,
-    batch_size=1000,
+    lr=0.0001,
+    batch_size=100,
     epochs=50,
     model="DCCANOI",
-    architecture="linear",
-    rho=0.5,
+    architecture="nonlinear",
+    rho=0.9,
     random_seed=1,
-    optimizer="sgd",
+    optimizer="adam",
     num_workers=4,
 )
 
@@ -151,30 +151,17 @@ def main():
             latent_dimensions=latent_dims, feature_size=feature_size[1]
         )
     elif config.architecture == "nonlinear":
-        if config.data == "XRMB":
-            # Use nonlinear encoders with hidden layers for each view
-            encoder_1 = architectures.Encoder(
-                latent_dimensions=latent_dims,
-                layer_sizes=(1800, 1800),
-                feature_size=feature_size[0],
-            )
-            encoder_2 = architectures.Encoder(
-                latent_dimensions=latent_dims,
-                layer_sizes=(1200, 1200),
-                feature_size=feature_size[1],
-            )
-        else:
-            # Use nonlinear encoders with hidden layers for each view
-            encoder_1 = architectures.Encoder(
-                latent_dimensions=latent_dims,
-                layer_sizes=(800, 800),
-                feature_size=feature_size[0],
-            )
-            encoder_2 = architectures.Encoder(
-                latent_dimensions=latent_dims,
-                layer_sizes=(800, 800),
-                feature_size=feature_size[1],
-            )
+        # Use nonlinear encoders with hidden layers for each view
+        encoder_1 = architectures.Encoder(
+            latent_dimensions=latent_dims,
+            layer_sizes=(800, 800),
+            feature_size=feature_size[0],
+        )
+        encoder_2 = architectures.Encoder(
+            latent_dimensions=latent_dims,
+            layer_sizes=(800, 800),
+            feature_size=feature_size[1],
+        )
     else:
         raise ValueError("architecture not supported")
 

@@ -4,7 +4,7 @@ command:
   - ${program}
   - ${args}
 program: experiments/deep_mcca/train.py
-project: DeepCCA
+project: DeepMCCA
 method: grid
 parameters:
   data:
