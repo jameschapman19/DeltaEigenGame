@@ -1,0 +1,17 @@
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - ${args}
+program: experiments/deep_mcca/train.py
+project: DeepCCA
+method: grid
+parameters:
+  data:
+    values: [ 'mfeat' ]
+  model:
+    values: [ 'DMCCA', 'DGCCA', 'DCCAEY' ]
+  batch_size:
+    values: [ 5, 10, 20, 50, 100, 200]
+  lr:
+    values: [ 1e-2, 1e-3, 1e-4, 1e-5 ]
