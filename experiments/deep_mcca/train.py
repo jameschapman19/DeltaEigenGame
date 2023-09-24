@@ -80,12 +80,12 @@ def main():
         feature_size = [216, 76, 64, 240, 47]
         dataset = MFeat(root=os.getcwd(), download=True, feats=feats)
         import numpy as np
-        dataset.dataset["fac"] = dataset.dataset["fac"]# + np.random.randn(dataset.dataset["fac"].shape[0], dataset.dataset["fac"].shape[1])*0.01
-        dataset.dataset["fou"] = dataset.dataset["fou"]# + np.random.randn(dataset.dataset["fou"].shape[0], dataset.dataset["fou"].shape[1])*0.01
-        dataset.dataset["kar"] = dataset.dataset["kar"]# + np.random.randn(dataset.dataset["kar"].shape[0], dataset.dataset["kar"].shape[1])*0.01
-        dataset.dataset["mor"] = dataset.dataset["mor"]# + np.random.randn(dataset.dataset["mor"].shape[0], dataset.dataset["mor"].shape[1])*0.01
-        dataset.dataset["pix"] = dataset.dataset["pix"]# + np.random.randn(dataset.dataset["pix"].shape[0], dataset.dataset["pix"].shape[1])*0.01
-        dataset.dataset["zer"] = dataset.dataset["zer"]# + np.random.randn(dataset.dataset["zer"].shape[0], dataset.dataset["zer"].shape[1])*0.01
+        dataset.dataset["fac"] = dataset.dataset["fac"]
+        dataset.dataset["fou"] = dataset.dataset["fou"]
+        dataset.dataset["kar"] = dataset.dataset["kar"]
+        dataset.dataset["mor"] = dataset.dataset["mor"]
+        dataset.dataset["pix"] = dataset.dataset["pix"]
+        dataset.dataset["zer"] = dataset.dataset["zer"]
         # split into train and test
         train_size = int(0.8 * len(dataset))
         test_size = len(dataset) - train_size
