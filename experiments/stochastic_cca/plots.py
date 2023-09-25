@@ -286,13 +286,60 @@ def plot_learning_rate_ablation(
     plt.savefig(f"plots/{data}_learning_rate_ablation.svg")
 
 
+def plot_models_different_batch_sizes(data="mnist"):
+    """
+    Get the performance of the best lr for each model at each batch size. On x-axis put batch size, and then grouped bar chart one bar for each model
+    """
+    id_df, summary_df, config_df = get_summary(project=PROJECT)
+    summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
+    summary_df = summary_df.loc[summary_df["data"] == data]
+    summary_df = summary_df.loc[summary_df["batch_size"]>2]
+
+    # get average over random seeds
+    best_df = (
+        summary_df.fillna(np.inf)
+        .groupby(["lr", "batch_size", "model", "optimizer"])[f"train/PCC"]
+        .mean()
+        .replace(np.inf, np.nan)
+        .dropna()
+        .reset_index()
+    )
+    # Find the best lr, optimizer combination for each batch_size based on train/PCC
+    best_lr_per_batch = best_df.groupby(["batch_size", "model"])["train/PCC"].idxmax()
+    best_lr_df = best_df.loc[best_lr_per_batch][["lr", "batch_size", "model","optimizer"]]
+    # get summary data for models in summary_df matching best_lr_df drop duplicate columns
+    summary_df = pd.merge(
+        best_lr_df, summary_df, on=["lr", "batch_size", "model"], how="left"
+    )
+    # as grouped bar chart, x-axis is batch size, y-axis is train/PCC, grouped by model
+    g = sns.catplot(
+        data=summary_df,
+        x="batch_size",
+        y="train/PCC",
+        hue="model",
+        kind="bar",
+        palette=colorblind_palette,
+    )
+    g.set(ylim=(0, 1))
+    plt.title(
+        rf"Top 5 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
+    )
+    plt.savefig(f"plots/{data}_models_different_batch_sizes.svg")
+    # Also return the average train/PCC for each model at each batch size as a latex table
+    summary_df.groupby(["model", "batch_size"])["train/PCC"].mean().unstack().to_latex(
+        f"plots/{data}_models_different_batch_sizes.tex"
+    )
+
+
 if __name__ == "__main__":
+    plot_models_different_batch_sizes("mediamill")
+    plot_models_different_batch_sizes("cifar")
     # plot_learning_rate_ablation("mediamill")
     # plot_learning_rate_ablation("cifar")
     # plot_minibatch_size_ablation("mediamill")
     # plot_minibatch_size_ablation("cifar")
-    plot_optimizer_ablation("mediamill")
-    plot_optimizer_ablation("cifar")
+    # plot_optimizer_ablation("mediamill")
+    # plot_optimizer_ablation("cifar")
     # for data in ["mediamill", "cifar"]:
     #     for batch_size in [100, 50, 20, 5]:
     #         plot_pcc(data, batch_size, time=False)

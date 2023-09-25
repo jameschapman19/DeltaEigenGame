@@ -12,8 +12,8 @@ parameters:
   architecture:
     values: [ 'nonlinear' ]
   batch_size:
-    values: [ 500]
+    values: [ 100]
   lr:
-    values: [ 1e-2, 1e-3, 1e-4, 1e-5 ]
+    values: [ 1e-4, 1e-5, 1e-6 ]
   model:
     values: [ 'DCCA' ]
