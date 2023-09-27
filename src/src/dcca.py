@@ -9,7 +9,7 @@ import numpy as np
 # Defining a custom callback to log the correlation metrics
 class CorrelationCallback(Callback):
     def on_validation_epoch_end(
-            self, trainer: Trainer, pl_module: LightningModule
+        self, trainer: Trainer, pl_module: LightningModule
     ) -> None:
         # Population Objective
         z = pl_module.transform(trainer.val_dataloaders[0])
@@ -21,11 +21,9 @@ class CorrelationCallback(Callback):
         pl_module.log("val/obj_penalty", pen)
         pl_module.log("val/obj", rew - pen)
         pl_module.log("val/corr", corrs.sum())
-        pl_module.log("val/corr_squared", (corrs ** 2).sum())
+        pl_module.log("val/corr_squared", (corrs**2).sum())
 
-    def on_train_epoch_end(
-            self, trainer: Trainer, pl_module: LightningModule
-    ) -> None:
+    def on_train_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         # Population Objective
         z = pl_module.transform(trainer.train_dataloader)
         rew, pen = self.obj(z)
@@ -36,7 +34,7 @@ class CorrelationCallback(Callback):
         pl_module.log("train/obj_penalty", pen)
         pl_module.log("train/obj", rew - pen)
         pl_module.log("train/corr", corrs.sum())
-        pl_module.log("train/corr_squared", (corrs ** 2).sum())
+        pl_module.log("train/corr_squared", (corrs**2).sum())
 
     def obj(self, z):
         C = np.cov(np.hstack(z).T)

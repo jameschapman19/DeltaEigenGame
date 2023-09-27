@@ -1,6 +1,7 @@
 """
 Generates plots of results from wandb api
 """
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +17,8 @@ sns.set_style("whitegrid")
 sns.set_context(
     "paper", font_scale=2.0, rc={"lines.linewidth": 2.5, "axes.labelsize": 16}
 )
+# Set the default figure size
+plt.rcParams["figure.figsize"] = (18, 6)  # Adjust the values as needed
 # sns tight layout
 
 PROJECT = "StochasticCCA"
@@ -39,9 +42,15 @@ DIMENSIONS = {
     "mediamill": (120, 120),
 }
 
+os.makedirs("plots/StochasticCCA", exist_ok=True)
+
 
 def get_best_runs(
-    data="mnist", batch_size=100, objective="PCC", mode="Train", lr=None, seed=None
+    data="mnist",
+    batch_size=100,
+    objective="PCC",
+    mode="Train",
+    lr=None,
 ):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
@@ -49,12 +58,10 @@ def get_best_runs(
     summary_df = summary_df.loc[summary_df["batch_size"] == batch_size]
     if lr is not None:
         summary_df = summary_df.loc[summary_df["lr"] == lr]
-    if seed is not None:
-        summary_df = summary_df.loc[summary_df["seed"] == seed]
     # get average over random seeds
     best_df = (
         summary_df.fillna(np.inf)
-        .groupby(["model", "lr", "optimizer"])[f"{mode.lower()}/{objective}"]
+        .groupby(["model", "lr", "optimizer", "gamma"])[f"{mode.lower()}/{objective}"]
         .mean()
         .replace(np.inf, np.nan)
         .dropna()
@@ -62,20 +69,17 @@ def get_best_runs(
     )
     # sort summary_df by Train PCC or PVC
     best_df = best_df.sort_values(by=[f"{mode.lower()}/{objective}"], ascending=False)
-    best_df = best_df.groupby("model").head(1).reset_index(drop=True)
+    best_df = best_df.groupby(["model"]).head(1).reset_index(drop=True)
+
     # get run data for models in summary_df matching best_df
     summary_df = pd.merge(
-        best_df, summary_df, on=["model", "lr", "optimizer"], how="left"
+        best_df, summary_df, on=["model", "lr", "optimizer", "gamma"], how="left"
     )
     df = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
     return df
 
 
-def plot_pcc(data="mnist", batch_size=100, lr=None, time=False):
-    if time:
-        seed = 1
-    else:
-        seed = None
+def plot_pcc(data="mnist", batch_size=100, lr=None):
     # Plot PCC for best runs for each model
     df = get_best_runs(
         data=data,
@@ -83,50 +87,35 @@ def plot_pcc(data="mnist", batch_size=100, lr=None, time=False):
         objective="PCC",
         mode="Train",
         lr=lr,
-        seed=seed,
     )
+    # # drop nans in "train/PCC" column
+    # df = df.dropna(subset=["train/PCC"])
     # map model names to titles
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     df = df.rename(columns={"batch_size": "batch size"})
     df = df.rename(columns={"train/PCC": "Train PCC"})
     df = df.rename(columns={"samples_seen": "Samples Seen"})
-    df = df.rename(columns={"_runtime": "Time"})
     # Fill NaN values in "Samples Seen" column with previous values
     df["Samples Seen"].fillna(method="ffill", inplace=True)
     # drop rows with Nan in "Train PCC" column
     df = df.dropna(subset=["Train PCC"])
-    # subtract minimum time for each model from time
-    df["Time"] = df.groupby("model")["Time"].transform(lambda x: x - x.min())
-    # figure that is shorter than it is wide
-    plt.figure(figsize=(10, 5))
-    if time:
-        sns.lineplot(
-            data=df,
-            x="Time",
-            y="Train PCC",
-            hue="model",
-            hue_order=ORDER,
-            palette=sns.color_palette(palette, n_colors=3),
-        )
-    else:
-        sns.lineplot(
-            data=df,
-            x="Samples Seen",
-            y="Train PCC",
-            hue="model",
-            hue_order=ORDER,
-            palette=sns.color_palette(palette, n_colors=3),
-        )
+    plt.figure(figsize=(11.87, 8.27))
+    sns.lineplot(
+        data=df,
+        x="Samples Seen",
+        y="Train PCC",
+        hue="model",
+        hue_order=ORDER,
+        palette=sns.color_palette(palette, n_colors=3),
+    )
     plt.title(
-        rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
+        rf"Top 5 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
     )
     if lr is None:
         lr = "tuned"
     plt.ylim(0, 1)
     plt.tight_layout()
-    if time:
-        plt.savefig(f"plots/{data}_{batch_size}_pcc_time_lr_{lr}.svg")
-    plt.savefig(f"plots/{data}_{batch_size}_pcc_lr_{lr}.svg")
+    plt.savefig(f"plots/StochasticCCA/{data}_{batch_size}_pcc_lr_{lr}.svg")
 
 
 def plot_minibatch_size_ablation(data="mnist", optimizer="Adam", time=False):
@@ -185,9 +174,9 @@ def plot_minibatch_size_ablation(data="mnist", optimizer="Adam", time=False):
     )  # Skip the first handle which is 'log_lr'
     plt.ylim(0, 1)
     plt.title(
-        rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
+        rf"Top 5 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
     )
-    plt.savefig(f"plots/{data}_minibatch_size_ablation.svg")
+    plt.savefig(f"plots/StochasticCCA/{data}_minibatch_size_ablation.svg")
 
 
 def plot_optimizer_ablation(data="mnist", batch_size=100):
@@ -230,9 +219,9 @@ def plot_optimizer_ablation(data="mnist", batch_size=100):
     )
     plt.ylim(0, 1)
     plt.title(
-        rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
+        rf"Top 5 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
     )
-    plt.savefig(f"plots/{data}_optimizer_ablation.svg")
+    plt.savefig(f"plots/StochasticCCA/{data}_optimizer_ablation.svg")
 
 
 def plot_learning_rate_ablation(
@@ -281,9 +270,9 @@ def plot_learning_rate_ablation(
     )  # Skip the first handle which is 'log_lr'
     plt.ylim(0, 1)
     plt.title(
-        rf"Top 4 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
+        rf"Top 5 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
     )
-    plt.savefig(f"plots/{data}_learning_rate_ablation.svg")
+    plt.savefig(f"plots/StochasticCCA/{data}_learning_rate_ablation.svg")
 
 
 def plot_models_different_batch_sizes(data="mnist"):
@@ -293,7 +282,7 @@ def plot_models_different_batch_sizes(data="mnist"):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df["data"] == data]
-    summary_df = summary_df.loc[summary_df["batch_size"]>2]
+    summary_df = summary_df.loc[summary_df["batch_size"] > 2]
 
     # get average over random seeds
     best_df = (
@@ -306,40 +295,50 @@ def plot_models_different_batch_sizes(data="mnist"):
     )
     # Find the best lr, optimizer combination for each batch_size based on train/PCC
     best_lr_per_batch = best_df.groupby(["batch_size", "model"])["train/PCC"].idxmax()
-    best_lr_df = best_df.loc[best_lr_per_batch][["lr", "batch_size", "model","optimizer"]]
+    best_lr_df = best_df.loc[best_lr_per_batch][
+        ["lr", "batch_size", "model", "optimizer"]
+    ]
     # get summary data for models in summary_df matching best_lr_df drop duplicate columns
     summary_df = pd.merge(
-        best_lr_df, summary_df, on=["lr", "batch_size", "model"], how="left"
+        best_lr_df,
+        summary_df,
+        on=["lr", "batch_size", "model", "optimizer"],
+        how="left",
     )
+    # Use formal model names
+    summary_df["model"] = summary_df["model"].map(MODEL_TO_TITLE)
+    summary_df = summary_df.rename(columns={"batch_size": "batch size"})
     # as grouped bar chart, x-axis is batch size, y-axis is train/PCC, grouped by model
     g = sns.catplot(
         data=summary_df,
-        x="batch_size",
+        x="batch size",
         y="train/PCC",
         hue="model",
+        hue_order=ORDER,
         kind="bar",
         palette=colorblind_palette,
     )
     g.set(ylim=(0, 1))
+    g.fig.set_figwidth(11.87)
+    g.fig.set_figheight(8.27)
     plt.title(
         rf"Top 5 CCA on {data} ($d_x$={DIMENSIONS[data][0]}, $d_y$={DIMENSIONS[data][1]})"
     )
-    plt.savefig(f"plots/{data}_models_different_batch_sizes.svg")
+    sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, 0.05), ncol=3, title=None)
+    plt.tight_layout()
+    plt.savefig(
+        f"plots/StochasticCCA/{data}_models_different_batch_sizes.svg",
+        bbox_inches="tight",
+    )
     # Also return the average train/PCC for each model at each batch size as a latex table
-    summary_df.groupby(["model", "batch_size"])["train/PCC"].mean().unstack().to_latex(
-        f"plots/{data}_models_different_batch_sizes.tex"
+    summary_df.groupby(["model", "batch size"])["train/PCC"].mean().unstack().to_latex(
+        f"plots/StochasticCCA/{data}_models_different_batch_sizes.tex"
     )
 
 
 if __name__ == "__main__":
-    plot_models_different_batch_sizes("mediamill")
-    plot_models_different_batch_sizes("cifar")
-    # plot_learning_rate_ablation("mediamill")
-    # plot_learning_rate_ablation("cifar")
-    # plot_minibatch_size_ablation("mediamill")
-    # plot_minibatch_size_ablation("cifar")
-    # plot_optimizer_ablation("mediamill")
-    # plot_optimizer_ablation("cifar")
-    # for data in ["mediamill", "cifar"]:
-    #     for batch_size in [100, 50, 20, 5]:
-    #         plot_pcc(data, batch_size, time=False)
+    # plot_models_different_batch_sizes("mediamill")
+    # plot_models_different_batch_sizes("cifar")
+    for dataset in ["mediamill", "cifar"]:
+        for batch_size in [50, 100]:
+            plot_pcc(dataset, batch_size)

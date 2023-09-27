@@ -8,11 +8,11 @@ project: DeepCCA
 method: grid
 parameters:
   data:
-    values: [ 'SplitMNIST']
+    values: [ 'XRMB']
   architecture:
     values: [ 'nonlinear' ]
   batch_size:
-    values: [ 5,2]
+    values: [ 20,50,100 ]
   lr:
     values: [1e-3, 1e-4,1e-5 ]
   model:

@@ -12,7 +12,7 @@ parameters:
   architecture:
     values: [ 'nonlinear' ]
   batch_size:
-    values: [ 100]
+    values: [ 50,100]
   lr:
     values: [ 1e-4, 1e-5, 1e-6 ]
   model:

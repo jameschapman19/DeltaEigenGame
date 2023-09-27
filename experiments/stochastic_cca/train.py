@@ -175,9 +175,8 @@ def main():
     if X_test is not None:
         true["val"] = true["val"][: wandb.config.components].sum()
 
-
     # log every tenth of an epoch
-    log_every_n_steps = int((X.shape[0] / 10)/config.batch_size)
+    log_every_n_steps = int((X.shape[0] / 10) / config.batch_size)
     # Initialize the model based on the objective and model name
     model = MODEL_DICT[config.objective][config.model](
         batch_size=config.batch_size,
@@ -192,7 +191,7 @@ def main():
                 SampleCounterCallback(),
             ],
             "enable_progress_bar": False,
-            "val_check_interval": 0.05,
+            "val_check_interval": 0.1,
             "log_every_n_steps": log_every_n_steps,
             "enable_checkpointing": False,
         },

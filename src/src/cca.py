@@ -1,6 +1,7 @@
 import torch
 from cca_zoo.linear import CCA_EY, CCA_GHA
 
+
 class DeltaEigenGame(CCA_GHA):
     def loss(self, views, independent_views=None, **kwargs):
         # Encoding the views with the forward method
@@ -26,6 +27,7 @@ class DeltaEigenGame(CCA_GHA):
             "penalties": penalties,
         }
 
+
 class SGHA2(CCA_GHA):
     def loss(self, views, independent_views=None, **kwargs):
         # Encoding the views with the forward method
@@ -43,13 +45,14 @@ class SGHA2(CCA_GHA):
             # Getting A' and B' matrices from independent_z
             independent_A, independent_B = self.get_AB(independent_z)
             # Hebbian
-            penalties = torch.trace(A @ independent_B)-torch.trace(independent_A)
+            penalties = torch.trace(A @ independent_B) - torch.trace(independent_A)
             # penalties = torch.trace(A @ independent_B)
         return {
             "loss": -rewards + penalties,
             "rewards": rewards,
             "penalties": penalties,
         }
+
 
 class SGHA(CCA_GHA):
     manual_optimization = True
@@ -68,7 +71,9 @@ class SGHA(CCA_GHA):
                 batch_size=batch["views"][0].shape[0],
             )
         v = torch.vstack([w.data for w in self.torch_weights])
-        grads = self._update_grads(batch["views"], v, batch.get("independent_views", None))
+        grads = self._update_grads(
+            batch["views"], v, batch.get("independent_views", None)
+        )
         grads = torch.split(grads, self.n_features_)
         for i, w in enumerate(self.torch_weights):
             self.torch_weights[i].grad = grads[i]

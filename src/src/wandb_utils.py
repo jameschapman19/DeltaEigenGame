@@ -26,6 +26,7 @@ def get_run_data(ids: Union[None, List[str]] = None, project: str = "") -> pd.Da
             history["batch_size"] = run.config["batch_size"]
             history["optimizer"] = run.config["optimizer"]
             data.append(history)
+            # if model is  ey or gha, then if the
 
     data = pd.concat(data).reset_index(drop=True)
     return data

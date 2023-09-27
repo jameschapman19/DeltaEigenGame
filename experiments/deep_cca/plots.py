@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -5,27 +7,29 @@ import seaborn as sns
 
 from src.wandb_utils import get_summary, get_run_data
 
-PROJECT = "DeepDeltaEigenGame"
-
+PROJECT = "DeepCCA"
+# Set a consistent color scheme for NeurIPS paper
+palette = "colorblind"
+colorblind_palette = sns.color_palette(palette, as_cmap=True)
 sns.set_context("paper", font_scale=2.0)
 sns.set_style("whitegrid")
-DASHES = [(0, 0), (2, 2), (2, 2), (2, 2)]
+# Set the default figure size
+plt.rcParams["figure.figsize"] = (24, 6)  # Adjust the values as needed
 MODEL_TO_TITLE = {
-    "DCCAEY_NPSD": "DCCA-EY",
-    "DCCASimpler": "DCCA-SVD",
-    # "DCCAGH": "DCCA-GH",
+    "DCCAEY": "DCCA-EY",
     "DCCANOI": "DCCA-NOI",
-    "DCCA": "DCCA-STOL-100",
-    "DCCABARLOWTWINS": "DCCA-BarlowTwins",
+    "DCCA": "DCCA-STOL",
 }
 
-ORDER = ["DCCA-EY", "DCCA-SVD", "DCCA-BarlowTwins", "DCCA-NOI", "DCCA-STOL-100"]
+ORDER = ["DCCA-EY", "DCCA-NOI", "DCCA-STOL"]
+
+os.makedirs("plots/DCCA", exist_ok=True)
 
 
 def get_best_runs(
-        data="SplitMNIST",
-        lr=None,
-        batch_size=100,
+    data="SplitMNIST",
+    lr=None,
+    batch_size=100,
 ):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
@@ -66,7 +70,7 @@ def plot_tcc(run_data, title, data="XRMB", hue="model"):
     plt.xticks(np.arange(0, 21, 5))
     plt.title(rf"Top 50 DCCA on {data}")
     plt.tight_layout()
-    plt.savefig(f"plots/{title}.png")
+    plt.savefig(f"plots/DCCA/{title}.png")
 
 
 def plot_simpler_lr():
@@ -101,7 +105,7 @@ def plot_simpler_lr():
         "Top 50 DCCA on Split MNIST For DCCA-SVD With Different Learning Rates",
         wrap=True,
     )
-    plt.savefig(f"plots/dcca_lr_experiment.png")
+    plt.savefig(f"plots/DCCA/dcca_lr_experiment.png")
 
 
 def plot_minibatch_size_ablation(data="mnist"):
@@ -146,14 +150,66 @@ def plot_minibatch_size_ablation(data="mnist"):
         wrap=True,
     )
     plt.tight_layout()
-    plt.savefig(f"plots/deep_{data}_minibatch_size_ablation.png")
+    plt.savefig(f"plots/DCCA/deep_{data}_minibatch_size_ablation.png")
 
 
-# plot_minibatch_size_ablation("SplitMNIST")
-# plot_simpler_lr()
-# plot_all_models(data="XRMB")
-plot_all_models(data="SplitMNIST")
+def plot_models_different_batch_sizes(data="SplitMNIST"):
+    """
+    Get the performance of the best lr for each model at each batch size. On x-axis put batch size, and then grouped bar chart one bar for each model
+    """
+    id_df, summary_df, config_df = get_summary(project=PROJECT)
+    summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
+    summary_df = summary_df.loc[summary_df["data"] == data]
+    summary_df = summary_df.loc[summary_df["batch_size"] <500]
 
-# for data in ["SplitMNIST", "XRMB"]:
-#     for batch_size in [100]:
-#         plot_tcc(data=data)
+    # get average over random seeds
+    best_df = (
+        summary_df.fillna(np.inf)
+        .groupby(["lr", "batch_size", "model", "optimizer", "rho"])[f"val/corr"]
+        .mean()
+        .replace(np.inf, np.nan)
+        .dropna()
+        .reset_index()
+    )
+    # Find the best lr, optimizer combination for each batch_size based on train/PCC
+    best_lr_per_batch = best_df.groupby(["batch_size", "model"])["val/corr"].idxmax()
+    best_lr_df = best_df.loc[best_lr_per_batch][
+        ["lr", "batch_size", "model", "optimizer", "rho"]
+    ]
+    # get summary data for models in summary_df matching best_lr_df drop duplicate columns
+    summary_df = pd.merge(
+        best_lr_df,
+        summary_df,
+        on=["lr", "batch_size", "model", "optimizer", "rho"],
+        how="left",
+    )
+    # Use formal model names
+    summary_df["model"] = summary_df["model"].map(MODEL_TO_TITLE)
+    summary_df = summary_df.rename(columns={"batch_size": "batch size"})
+    summary_df = summary_df.rename(columns={"val/corr": "Validation TCC"})
+    # as grouped bar chart, x-axis is batch size, y-axis is train/PCC, grouped by model
+    # Set the figure size to make it shorter and wider
+    g=sns.catplot(
+        data=summary_df,
+        x="batch size",
+        y="Validation TCC",
+        hue="model",
+        hue_order=ORDER,
+        kind="bar",
+        palette=colorblind_palette,
+    )
+    g.fig.set_figwidth(11.87)
+    g.fig.set_figheight(8.27)
+    plt.title(rf"Top 50 CCA on {data}")
+    sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, 0.05), ncol=3, title=None)
+    plt.tight_layout()
+    plt.savefig(f"plots/DCCA/{data}_models_different_batch_sizes.svg", bbox_inches="tight")
+
+
+def main():
+    plot_models_different_batch_sizes(data="XRMB")
+    plot_models_different_batch_sizes(data="SplitMNIST")
+
+
+if __name__ == "__main__":
+    main()

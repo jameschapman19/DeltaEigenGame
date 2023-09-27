@@ -16,6 +16,7 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import random_split
 from src.data_utils import MFeat
+
 WANDB_START_METHOD = "thread"
 
 # Define default configuration parameters for wandb
@@ -74,10 +75,11 @@ def main():
     wandb_logger = WandbLogger()
 
     if config.data == "mfeat":
-        feats= ["fac", "fou", "kar", "pix", "zer"]
+        feats = ["fac", "fou", "kar", "pix", "zer"]
         feature_size = [216, 76, 64, 240, 47]
         dataset = MFeat(root=os.getcwd(), download=True, feats=feats)
         import numpy as np
+
         dataset.dataset["fac"] = dataset.dataset["fac"]
         dataset.dataset["fou"] = dataset.dataset["fou"]
         dataset.dataset["kar"] = dataset.dataset["kar"]
@@ -88,7 +90,9 @@ def main():
         train_size = int(0.8 * len(dataset))
         test_size = len(dataset) - train_size
         train_dataset, test_dataset = random_split(
-            dataset, [train_size, test_size], generator=torch.Generator().manual_seed(42)
+            dataset,
+            [train_size, test_size],
+            generator=torch.Generator().manual_seed(42),
         )
         latent_dims = 50
     elif config.data == "twitter":
@@ -98,13 +102,15 @@ def main():
         train_size = int(0.8 * len(dataset))
         test_size = len(dataset) - train_size
         train_dataset, test_dataset = random_split(
-            dataset, [train_size, test_size], generator=torch.Generator().manual_seed(42)
+            dataset,
+            [train_size, test_size],
+            generator=torch.Generator().manual_seed(42),
         )
         latent_dims = 5
     elif config.data == "sim":
         import numpy as np
 
-        feature_size = [128, 128, 128,  128]
+        feature_size = [128, 128, 128, 128]
         X = np.random.randn(1000, 128)
         Y = np.random.randn(1000, 128)
         Z = np.random.randn(1000, 128)
@@ -147,16 +153,23 @@ def main():
     # Create encoders according to the configuration parameter
     if config.architecture == "linear":
         # Use linear encoders for each view
-        encoders = [architectures.LinearEncoder(
-            latent_dimensions=latent_dims, feature_size=f
-        ) for f in feature_size]
+        encoders = [
+            architectures.LinearEncoder(latent_dimensions=latent_dims, feature_size=f)
+            for f in feature_size
+        ]
     elif config.architecture == "nonlinear":
         # Use nonlinear encoders with hidden layers for each view
-        encoders = [architectures.Encoder(
-            latent_dimensions=latent_dims,
-            layer_sizes=(800,800,),
-            feature_size=f
-        ) for f in feature_size]
+        encoders = [
+            architectures.Encoder(
+                latent_dimensions=latent_dims,
+                layer_sizes=(
+                    800,
+                    800,
+                ),
+                feature_size=f,
+            )
+            for f in feature_size
+        ]
     else:
         raise ValueError("architecture not supported")
 

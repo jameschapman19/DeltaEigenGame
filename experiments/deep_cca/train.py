@@ -36,22 +36,26 @@ defaults = dict(
 
 class IndependentMixin:
     random_state = np.random.RandomState(0)
+
     def __getitem__(self, index):
         views = super().__getitem__(index)
         independent_index = self.random_state.randint(0, len(self))
         independent_views = super().__getitem__(independent_index)
-        return {"views": views["views"], "independent_views": independent_views["views"]}
+        return {
+            "views": views["views"],
+            "independent_views": independent_views["views"],
+        }
 
 
-class XRMB_(IndependentMixin,XRMB):
+class XRMB_(IndependentMixin, XRMB):
     pass
 
 
-class NoisyMNIST_(IndependentMixin,NoisyMNIST):
+class NoisyMNIST_(IndependentMixin, NoisyMNIST):
     pass
 
 
-class SplitMNIST_(IndependentMixin,SplitMNIST):
+class SplitMNIST_(IndependentMixin, SplitMNIST):
     pass
 
 
@@ -80,7 +84,7 @@ def main():
         feature_size = [273, 112]
         train_dataset = XRMB_(root=os.getcwd(), train=True, download=True)
         test_dataset = XRMB_(root=os.getcwd(), train=False, download=True)
-        latent_dims=112
+        latent_dims = 50
     elif config.data == "SplitMNIST":
         feature_size = [392, 392]
         train_dataset = SplitMNIST_(
@@ -89,7 +93,7 @@ def main():
         test_dataset = SplitMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
-        latent_dims=50
+        latent_dims = 50
     elif config.data == "NoisyMNIST":
         feature_size = [784, 784]
         train_dataset = NoisyMNIST_(
@@ -98,7 +102,7 @@ def main():
         test_dataset = NoisyMNIST_(
             root=os.getcwd(), mnist_type=config.mnist_type, train=False, download=True
         )
-        latent_dims=50
+        latent_dims = 50
     elif config.data == "sim":
         import numpy as np
 
@@ -107,7 +111,7 @@ def main():
         Y = np.random.randn(1000, 784)
         train_dataset = DoubleNumpyDataset((X, Y))
         test_dataset = DoubleNumpyDataset((X, Y))
-        latent_dims=50
+        latent_dims = 50
     else:
         raise ValueError("dataset not supported")
 
