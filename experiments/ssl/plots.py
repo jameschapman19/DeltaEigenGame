@@ -15,8 +15,6 @@ sns.set_style("whitegrid")
 sns.set_context(
     "paper", font_scale=2.0, rc={"lines.linewidth": 2.5, "axes.labelsize": 16}
 )
-# Set the default figure size
-plt.rcParams["figure.figsize"] = (18, 6)  # Adjust the values as needed
 os.makedirs("plots/SSL", exist_ok=True)
 
 CIFAR10_names = ["eygep-cifar10", "barlow_twins-cifar10", "vicreg-cifar10"]
@@ -108,9 +106,9 @@ def plot_projector_ablation():
     """
     # load data
     df = pd.read_excel("projector_dim.xlsx", sheet_name="Sheet1")
-
+    # drop model=SSL-SVD
+    df = df.loc[df["Model"] != "SSL-SVD"]
     for cifar in [10, 100]:
-        plt.figure(figsize=(12, 6))
         g=sns.barplot(
             x="Projector Size",
             y=f"CIFAR-{cifar} Top-1",
@@ -121,7 +119,7 @@ def plot_projector_ablation():
         plt.title(f"CIFAR-{cifar} Top-1 Accuracy vs. Projector Dimension")
         plt.xlabel("Projector Dimension")
         plt.ylabel(f"CIFAR-{cifar} Top-1 Accuracy")
-        sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, 0.05), ncol=3, title=None)
+        sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, -0.2), ncol=3, title=None, frameon=False)
         plt.tight_layout()
         plt.savefig(f"plots/SSL/cifar{cifar}_proj_dim.svg", bbox_inches="tight")
         plt.close()

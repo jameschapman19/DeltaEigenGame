@@ -6,15 +6,19 @@ import pandas as pd
 import seaborn as sns
 
 from src.wandb_utils import get_summary, get_run_data
-
+HEIGHT=7
+WIDTH=15
 PROJECT = "DeepCCA"
 # Set a consistent color scheme for NeurIPS paper
 palette = "colorblind"
 colorblind_palette = sns.color_palette(palette, as_cmap=True)
-sns.set_context("paper", font_scale=2.0)
+sns.set(rc={"figure.figsize": (WIDTH, HEIGHT)})
 sns.set_style("whitegrid")
-# Set the default figure size
-plt.rcParams["figure.figsize"] = (24, 6)  # Adjust the values as needed
+sns.set_context(
+    "paper",
+    font_scale=4.0,
+    rc={"lines.linewidth": 2.5, "figure.figsize": (WIDTH, HEIGHT)},
+)
 MODEL_TO_TITLE = {
     "DCCAEY": "DCCA-EY",
     "DCCANOI": "DCCA-NOI",
@@ -43,71 +47,6 @@ def get_best_runs(
     return df
 
 
-def plot_all_models(data="XRMB", lr=None, batch_size=100):
-    df = get_best_runs(data=data, lr=lr, batch_size=batch_size)
-    plot_tcc(df, title=f"dcca_{data}", data=data, hue="model")
-
-
-def plot_tcc(run_data, title, data="XRMB", hue="model"):
-    # get only the models in MODEL_TO_TITLE
-    run_data = run_data.loc[run_data["model"].isin(MODEL_TO_TITLE.keys())]
-    # map model names to titles
-    run_data["model"] = run_data["model"].map(MODEL_TO_TITLE)
-    # rename val/corr to Validation TCC
-    run_data = run_data.rename(columns={"val/corr": "Validation TCC"})
-    plt.figure(figsize=(10, 5))
-    sns.lineplot(
-        data=run_data,
-        x="epoch",
-        y="Validation TCC",
-        hue=hue,
-        hue_order=ORDER,
-    )
-    # x lim 10
-    plt.xlim(0, 20)
-    plt.ylim(0, 50)
-    # tick every 5
-    plt.xticks(np.arange(0, 21, 5))
-    plt.title(rf"Top 50 DCCA on {data}")
-    plt.tight_layout()
-    plt.savefig(f"plots/DCCA/{title}.png")
-
-
-def plot_simpler_lr():
-    id_df, summary_df, config_df = get_summary(project=PROJECT)
-    summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
-    summary_df = summary_df.loc[summary_df["data"] == "SplitMNIST"]
-    # batch size 100
-    summary_df = summary_df.loc[summary_df["batch_size"] == 100]
-    # For DCCAEY get all runs
-    summary_df = summary_df.loc[summary_df["model"] == "DCCASimpler"]
-    run_data = get_run_data(ids=summary_df["id"].tolist(), project=PROJECT)
-    # map model names to titles
-    run_data["model"] = run_data["model"].map(MODEL_TO_TITLE)
-    # rename val/corr to Validation TCC
-    run_data = run_data.rename(columns={"val/corr": "Validation TCC"})
-    plt.figure(figsize=(10, 5))
-    sns.lineplot(
-        data=run_data,
-        x="epoch",
-        y="Validation TCC",
-        hue="lr",
-        hue_order=ORDER,
-    )
-
-    plt.tight_layout()
-    # x lim 10
-    plt.xlim(0, 20)
-    plt.ylim(0, 50)
-    # tick every 5
-    plt.xticks(np.arange(0, 21, 5))
-    plt.title(
-        "Top 50 DCCA on Split MNIST For DCCA-SVD With Different Learning Rates",
-        wrap=True,
-    )
-    plt.savefig(f"plots/DCCA/dcca_lr_experiment.png")
-
-
 def plot_minibatch_size_ablation(data="mnist"):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
@@ -133,7 +72,6 @@ def plot_minibatch_size_ablation(data="mnist"):
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     df = df.rename(columns={"batch_size": "batch size"})
     df = df.rename(columns={"val/corr": "Validation TCC"})
-    plt.figure(figsize=(10, 5))
     sns.lineplot(
         data=df,
         x="epoch",
@@ -160,7 +98,8 @@ def plot_models_different_batch_sizes(data="SplitMNIST"):
     id_df, summary_df, config_df = get_summary(project=PROJECT)
     summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
     summary_df = summary_df.loc[summary_df["data"] == data]
-    summary_df = summary_df.loc[summary_df["batch_size"] <500]
+    summary_df = summary_df.loc[summary_df["batch_size"] < 500]
+    summary_df = summary_df.loc[summary_df["batch_size"] >= 20]
 
     # get average over random seeds
     best_df = (
@@ -189,7 +128,7 @@ def plot_models_different_batch_sizes(data="SplitMNIST"):
     summary_df = summary_df.rename(columns={"val/corr": "Validation TCC"})
     # as grouped bar chart, x-axis is batch size, y-axis is train/PCC, grouped by model
     # Set the figure size to make it shorter and wider
-    g=sns.catplot(
+    g = sns.catplot(
         data=summary_df,
         x="batch size",
         y="Validation TCC",
@@ -197,18 +136,60 @@ def plot_models_different_batch_sizes(data="SplitMNIST"):
         hue_order=ORDER,
         kind="bar",
         palette=colorblind_palette,
+        height=HEIGHT,
+        aspect=WIDTH/HEIGHT,
     )
-    g.fig.set_figwidth(11.87)
-    g.fig.set_figheight(8.27)
     plt.title(rf"Top 50 CCA on {data}")
     sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, 0.05), ncol=3, title=None)
     plt.tight_layout()
-    plt.savefig(f"plots/DCCA/{data}_models_different_batch_sizes.svg", bbox_inches="tight")
+    plt.savefig(
+        f"plots/DCCA/{data}_models_different_batch_sizes.svg", bbox_inches="tight"
+    )
+    plt.close()
+
+
+def plot_all_learning_curves(data="SplitMNIST", batch_sizes=None):
+    id_df, summary_df, config_df = get_summary(project=PROJECT)
+    summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
+    summary_df = summary_df.loc[summary_df["data"] == data]
+    df = pd.DataFrame()  # Initialize an empty DataFrame to hold all the data
+
+    for batch_size in batch_sizes:
+        single_df = get_best_runs(data=data, batch_size=batch_size)
+        df = pd.concat(
+            [df, single_df], ignore_index=True
+        )  # Concatenate to the main DataFrame
+    df = df.rename(columns={"val/corr": "Validation TCC"})
+    # drop nans in Validation TCC
+    df = df.dropna(subset=["Validation TCC"])
+    df = df.rename(columns={"train/corr": "Train TCC"})
+    df = df.rename(columns={"batch_size": "batch size"})
+    df["model"] = df["model"].map(MODEL_TO_TITLE)
+    # Plot the learning curves
+    g = sns.lineplot(
+        data=df,
+        x="epoch",
+        y="Validation TCC",
+        hue="model",
+        hue_order=ORDER,
+        palette=colorblind_palette,
+        style="batch size",
+        style_order=batch_sizes,
+    )
+    plt.legend(fontsize="x-small")
+    plt.title(rf"Top 50 CCA on {data}")
+    # sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, 0.05), ncol=4, title=None)
+    # sns.move_legend(g, "center left", bbox_to_anchor=(1, 0.5), ncol=1, title=None, frameon=False)
+    plt.tight_layout()
+    plt.savefig(f"plots/DCCA/{data}_allbatchsizes_pcc.svg")
+    plt.close()
 
 
 def main():
-    plot_models_different_batch_sizes(data="XRMB")
     plot_models_different_batch_sizes(data="SplitMNIST")
+    plot_models_different_batch_sizes(data="XRMB")
+    plot_all_learning_curves(data="SplitMNIST", batch_sizes=[50, 100])
+    plot_all_learning_curves(data="XRMB", batch_sizes=[50, 100])
 
 
 if __name__ == "__main__":

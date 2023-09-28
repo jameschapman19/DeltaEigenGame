@@ -6,17 +6,18 @@ import pandas as pd
 import seaborn as sns
 
 from src.wandb_utils import get_summary, get_run_data
-
+HEIGHT = 7
+WIDTH = 15
 # Set a consistent color scheme for NeurIPS paper
 palette = "colorblind"
 colorblind_palette = sns.color_palette(palette, as_cmap=True)
+sns.set(rc={"figure.figsize": (WIDTH, HEIGHT)})
 sns.set_style("whitegrid")
 sns.set_context(
-    "paper", font_scale=2.0, rc={"lines.linewidth": 2.5, "axes.labelsize": 16}
+    "paper",
+    font_scale=4.0,
+    rc={"lines.linewidth": 2.5, "figure.figsize": (WIDTH, HEIGHT)},
 )
-# sns tight layout
-# Set the default figure size
-plt.rcParams["figure.figsize"] = (18, 6)  # Adjust the values as needed
 PROJECT = "DeepMCCA"
 
 MODEL_TO_TITLE = {
@@ -59,7 +60,6 @@ def plot_learning_curves(data="mfeat", batch_size=200):
     df = df.rename(columns={"batch_size": "batch size"})
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     # Plot the learning curves
-    plt.figure(figsize=(12, 6))
     g = sns.lineplot(
         data=df,
         x="epoch",
@@ -88,7 +88,6 @@ def plot_all_learning_curves(data="mfeat", batch_sizes=None):
     df = df.rename(columns={"batch_size": "batch size"})
     df["model"] = df["model"].map(MODEL_TO_TITLE)
     # Plot the learning curves
-    plt.figure(figsize=(12, 6))
     g = sns.lineplot(
         data=df,
         x="epoch",
@@ -99,10 +98,14 @@ def plot_all_learning_curves(data="mfeat", batch_sizes=None):
         style="batch size",
         style_order=batch_sizes,
     )
+    plt.legend(fontsize="x-small")
+    #sns.move_legend(g, 'lower center',frameon=False)
+    # sns.move_legend(g, "center left", bbox_to_anchor=(1, 0.5), ncol=1, title=None, frameon=False)
     plt.title(rf"Top 50 CCA on {data}")
     #plt.ylim(0, 50)
     plt.tight_layout()
     plt.savefig(f"plots/DMCCA/{data}_allbatchsizes_pcc.svg")
+    plt.close()
 
 
 
@@ -138,28 +141,29 @@ def plot_models_different_batch_sizes(data="mfeat"):
     # Use formal model names
     summary_df["model"] = summary_df["model"].map(MODEL_TO_TITLE)
     summary_df = summary_df.rename(columns={"batch_size": "batch size"})
-    summary_df = summary_df.rename(columns={"val/corr": "Validation TCC"})
+    summary_df = summary_df.rename(columns={"val/corr": "Validation TMCC"})
     # as grouped bar chart, x-axis is batch size, y-axis is train/PCC, grouped by model
-    plt.figure(figsize=(12, 6))
     g = sns.catplot(
         data=summary_df,
         x="batch size",
-        y="Validation TCC",
+        y="Validation TMCC",
         hue="model",
         hue_order=ORDER,
         kind="bar",
         palette=colorblind_palette,
+        height=HEIGHT,
+        aspect=WIDTH/HEIGHT,
     )
     plt.title(rf"Top 50 CCA on {data}")
     sns.move_legend(g, "upper center", bbox_to_anchor=(0.5, 0.05), ncol=3, title=None)
     plt.tight_layout()
     plt.savefig(f"plots/DMCCA/{data}_models_different_batch_sizes.svg", bbox_inches="tight")
-
+    plt.close()
 
 def main():
-    plot_all_learning_curves(data="mfeat", batch_sizes=[50, 200])
-    for batch_size in [5, 10,20, 50, 100, 200]:
-        plot_learning_curves(data="mfeat", batch_size=batch_size)
+    plot_all_learning_curves(data="mfeat", batch_sizes=[50, 100])
+    # for batch_size in [5, 10,20, 50, 100, 200]:
+    #     plot_learning_curves(data="mfeat", batch_size=batch_size)
     plot_models_different_batch_sizes()
 
 
