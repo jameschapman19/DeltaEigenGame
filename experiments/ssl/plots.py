@@ -74,27 +74,44 @@ def plot_learning_curve(cifar=100, plot_log_error=False):
     # name to title
     df["name"] = df["name"].map(NAMES_TO_TITLES)
 
+    # Rename val_acc1 to Top-1 Accuracy
+    df = df.rename(columns={"val_acc1": "Top-1 Accuracy"})
+    # Rename val_acc5 to Top-5 Accuracy
+    df = df.rename(columns={"val_acc5": "Top-5 Accuracy"})
+
     if plot_log_error:
-        df["val_log_error"] = np.log((100 - df["val_acc1"])/100)
-        ylabel = f"CIFAR-{cifar} Log (1 - Top-1 Accuracy)"
+        df["Top-1 Accuracy"] = np.log((100 - df["Top-1 Accuracy"]) / 100)
+        df["Top-5 Accuracy"] = np.log((100 - df["Top-5 Accuracy"]) / 100)
+        ylabel = "Log (1 - Accuracy)"
     else:
-        df["val_log_error"] = df["val_acc1"]
-        ylabel = f"CIFAR-{cifar} Top-1 Accuracy"
+        ylabel = "Accuracy"
+
+    # put into long format so style= top-1 or top-5 and we plot accuracy
+    df = pd.melt(
+        df,
+        id_vars=["name", "epoch"],
+        value_vars=["Top-1 Accuracy", "Top-5 Accuracy"],
+        var_name="style",
+        value_name=ylabel,
+    )
 
     plot = sns.lineplot(
         data=df,
         x="epoch",
-        y="val_log_error",
+        y=ylabel,
         hue="name",
         hue_order=ORDER,
         palette=colorblind_palette,
+        style="style",
     )
-    plot.set_title(f"CIFAR-{cifar} Log Error vs. Epoch" if plot_log_error else f"CIFAR-{cifar} Top-1 Accuracy vs. Epoch")
+    plot.set_title(f"CIFAR-{cifar} {ylabel} vs. Epoch")
     plot.set_xlabel("Epoch")
     plot.set_ylabel(ylabel)
-    plot.legend(loc="lower right")
-    plt.savefig(f"plots/SSL/cifar{cifar}_log_error_learning_curve.svg" if plot_log_error else f"plots/SSL/cifar{cifar}_top1_learning_curve.svg", bbox_inches="tight")
+    plt.legend(fontsize="x-small")
+    plt.tight_layout()
+    plt.savefig(f"plots/SSL/cifar{cifar}_learning_curve{'_log_error' if plot_log_error else ''}.svg", bbox_inches="tight")
     plt.close()
+
 
 def plot_projector_ablation(plot_log_error=False):
     """
@@ -116,7 +133,7 @@ def plot_projector_ablation(plot_log_error=False):
         plt.legend(loc="lower right")
         plt.title(f"CIFAR-{cifar} Log Error vs. Projector Dimension" if plot_log_error else f"CIFAR-{cifar} Top-1 Accuracy vs. Projector Dimension")
         plt.xlabel("Projector Dimension")
-        ylabel = f"CIFAR-{cifar} Log (1 - Top-1 Accuracy)" if plot_log_error else f"CIFAR-{cifar} Top-1 Accuracy"
+        ylabel = f"Log (1 - Top-1 Accuracy)" if plot_log_error else f"Top-1 Accuracy"
         plt.ylabel(ylabel)
         sns.move_legend(
             g,
@@ -132,7 +149,7 @@ def plot_projector_ablation(plot_log_error=False):
 
 
 def main():
-    plot_projector_ablation(plot_log_error=True)
+    # plot_projector_ablation(plot_log_error=True)
     plot_learning_curve(cifar=10, plot_log_error=True)
     plot_learning_curve(cifar=100, plot_log_error=True)
 
