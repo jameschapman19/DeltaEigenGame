@@ -94,7 +94,8 @@ def plot_learning_curve(cifar=100, plot_log_error=False):
         var_name="style",
         value_name=ylabel,
     )
-
+    # Initialize the figure with custom dimensions
+    fig, ax = plt.subplots(figsize=(8, 4))  # 1.5 times wider than default (8, 8)
     plot = sns.lineplot(
         data=df,
         x="epoch",
@@ -103,17 +104,25 @@ def plot_learning_curve(cifar=100, plot_log_error=False):
         hue_order=ORDER,
         palette=colorblind_palette,
         style="style",
+        ax = ax
+    )
+    plt.tight_layout(rect=[0,0,0.75,1])  # Make space for the legend
+    # Update legend
+    plt.legend(
+        fontsize="x-small",
+        bbox_to_anchor=(1.05, 0.5),  # Center align
+        loc='center left',
+        frameon=False  # Remove box
     )
     plot.set_title(f"CIFAR-{cifar} {ylabel} vs. Epoch")
     plot.set_xlabel("Epoch")
     plot.set_ylabel(ylabel)
-    plt.legend(fontsize="x-small")
     plt.tight_layout()
-    plt.savefig(f"plots/SSL/cifar{cifar}_learning_curve{'_log_error' if plot_log_error else ''}.svg", bbox_inches="tight")
+    plt.savefig(f"plots/SSL/cifar{cifar}_learning_curve{'_log_error' if plot_log_error else ''}.pdf", bbox_inches="tight")
     plt.close()
 
 
-def plot_projector_ablation(plot_log_error=False):
+def plot_projector_ablation(plot_log_error=True):
     """
     Plot projector dimension vs. performance for SSL-EY and SSL-SVD
     """
@@ -144,14 +153,99 @@ def plot_projector_ablation(plot_log_error=False):
             frameon=False,
         )
         plt.tight_layout()
-        plt.savefig(f"plots/SSL/cifar{cifar}_proj_dim_log_error.svg" if plot_log_error else f"plots/SSL/cifar{cifar}_proj_dim.svg", bbox_inches="tight")
+        plt.savefig(f"plots/SSL/cifar{cifar}_proj_dim_log_error.pdf" if plot_log_error else f"plots/SSL/cifar{cifar}_proj_dim.pdf", bbox_inches="tight")
         plt.close()
 
 
+def plot_corr_vs_acc(cifar=100, plot_log_error=False):
+    id_df, summary_df, config_df = get_summary(project="solo-learn")
+    summary_df = pd.concat([id_df, summary_df, config_df], axis=1)
+    summary_df = summary_df.loc[summary_df["data/dataset"] == f"cifar{cifar}"]
+    if cifar == 10:
+        names = ["eygep-cifar10-64"]
+    else:
+        names = ["eygep-cifar100-64"]
+    summary_df = summary_df.loc[summary_df["name"].isin(names)]
+    config_df = config_df.loc[config_df["name"].isin(names)]
+    # Get the run data
+    df = get_run_data(ids=summary_df["id"].tolist(), project="solo-learn")
+    # name to title
+    df["name"] = df["name"].map(NAMES_TO_TITLES)
+    projector_dims = config_df["method_kwargs/proj_output_dim"].iloc[0]
+    
+    # Rename val_acc1 to Top-1 Accuracy
+    df = df.rename(columns={"val_acc1": "Top-1 Validation Accuracy"})
+    # Rename val_acc5 to Top-5 Accuracy
+    df = df.rename(columns={"val_acc5": "Top-5 Validation Accuracy"})
+    # Rename train_EYGEP_loss_epoch to EY
+    df = df.rename(columns={"train_EYGEP_loss_epoch": "Train EY"})
+    df["Train EY"] = df["Train EY"]*projector_dims
+
+    if plot_log_error:
+        df["Top-1 Validation Accuracy"] = np.log((100 - df["Top-1 Validation Accuracy"]) / 100)
+        df["Top-5 Validation Accuracy"] = np.log((100 - df["Top-5 Validation Accuracy"]) / 100)
+        ylabel = "Log (1 - Validation Accuracy)"
+    else:
+        ylabel = "Validation Accuracy"
+
+    # put into long format so style= top-1 or top-5 and we plot accuracy
+    df = pd.melt(
+        df,
+        id_vars=["name", "epoch","Train EY"],
+        value_vars=["Top-1 Validation Accuracy"],#, "Top-5 Train Accuracy"],
+        var_name="style",
+        value_name=ylabel,
+    )
+
+    fig, ax1 = plt.subplots()
+
+    # Plotting the accuracy losses
+    sns.lineplot(
+        data=df,
+        x="epoch",
+        y=ylabel,
+        style="style",
+        ax=ax1,
+        legend='brief'
+    )
+    plt.legend(fontsize="x-small")
+
+    # Create second y-axis for EY plot
+    ax2 = ax1.twinx()
+
+    # Plotting the EY loss
+    sns.lineplot(
+        data=df,
+        x="epoch",
+        y="Train EY",
+        ax=ax2,
+        color=sns.color_palette("tab10")[3],
+        legend=False
+    )
+
+    # Customize plot
+    ax1.set_title(f"CIFAR-{cifar}: {ylabel}" + r"& $\mathcal{L}_{EY}$ vs. Epoch")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel(ylabel, color=sns.color_palette("tab10")[0])
+    ax2.set_ylabel(r"Train $\mathcal{L}_{EY}$", color=sns.color_palette("tab10")[3])
+
+    # Coloring axes to match lines
+    ax1.tick_params(axis='y', colors=sns.color_palette("tab10")[0])
+    ax2.tick_params(axis='y', colors=sns.color_palette("tab10")[3])
+
+    plt.tight_layout()
+
+    # Save the plot
+    filename = f"plots/SSL/cifar{cifar}_corr_vs_acc{'_log_error' if plot_log_error else ''}.pdf"
+    plt.savefig(filename, bbox_inches="tight")
+    plt.close()
+
 def main():
+    plot_corr_vs_acc(cifar=10, plot_log_error=True)
+    plot_corr_vs_acc(cifar=100, plot_log_error=True)
     # plot_projector_ablation(plot_log_error=True)
-    plot_learning_curve(cifar=10, plot_log_error=True)
-    plot_learning_curve(cifar=100, plot_log_error=True)
+    # plot_learning_curve(cifar=10, plot_log_error=True)
+    # plot_learning_curve(cifar=100, plot_log_error=True)
 
 
 if __name__ == "__main__":

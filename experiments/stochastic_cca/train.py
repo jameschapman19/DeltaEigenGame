@@ -11,16 +11,17 @@ from src.data_utils import load_mnist, load_mediamill, load_cifar
 
 # Define default hyperparameters
 defaults = {
-    "model": "ey",
-    "data": "mediamill",
+    "model": "gamma",
+    "data": "cifar",
     "objective": "cca",
     "seed": 5,
     "components": 5,
     "batch_size": 100,
     "epochs": 1,
     "lr": 1e-3,
-    "gamma": 1e-4,
-    "optimizer": "Adam",
+    "gamma": 1e-3,
+    "optimizer": "SGD",
+    "pca": True
 }
 
 MODEL_DICT = {
@@ -163,6 +164,17 @@ def main():
     if X_test is not None:
         X_test = x_scaler.transform(X_test)
         Y_test = y_scaler.transform(Y_test)
+
+    if wandb.config.pca:
+        from sklearn.decomposition import PCA
+
+        pca = PCA()
+        X = pca.fit_transform(X)
+        Y = pca.fit_transform(Y)
+
+        if X_test is not None:
+            X_test = pca.transform(X_test)
+            Y_test = pca.transform(Y_test)
 
     train_views = [X, Y]
     if X_test is not None:

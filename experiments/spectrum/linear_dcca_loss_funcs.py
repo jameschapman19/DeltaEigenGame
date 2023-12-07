@@ -20,10 +20,10 @@ sns.set_context("paper", font_scale=1.5)
 
 seed_everything(42)
 LATENT_DIMS = 10  # The dimensionality of the latent space
-EPOCHS = 20  # The number of epochs to train the models
+EPOCHS = 50  # The number of epochs to train the models
 N_TRAIN = 1000  # The number of training samples
 N_VAL = 200  # The number of validation samples
-LR = 1e-3
+LR = 1e-4
 train_loader, val_loader, train_labels, val_labels = example_mnist_data(N_TRAIN, N_VAL)
 
 encoder_1 = architectures.LinearEncoder(latent_dimensions=LATENT_DIMS, feature_size=392)
@@ -79,38 +79,18 @@ def plot_latent_spectrum(latent_vectors, title=None, save_path=None):
 
 def experiment(train_loader, val_loader, encoder_1, encoder_2, lamb_values, cov_values):
 
-    # # Train EY
-    # model = DCCA_EY(
-    #     latent_dimensions=LATENT_DIMS, encoders=[encoder_1, encoder_2], lr=LR
-    # )
-    # trainer = pl.Trainer(max_epochs=EPOCHS, enable_checkpointing=False)
-    # trainer.fit(model, train_loader, val_loader)
-    #
-    # # Get latent vectors and calculate sparsity
-    # latent_vectors = model.transform(val_loader)
-    # plot_latent_spectrum(
-    #     latent_vectors, title="EY Latent Spectrum", save_path="ey_latent_spectrum.pdf"
-    # )
+    # Train EY
+    model = DCCA_EY(
+        latent_dimensions=LATENT_DIMS, encoders=[encoder_1, encoder_2], lr=LR
+    )
+    trainer = pl.Trainer(max_epochs=EPOCHS, enable_checkpointing=False)
+    trainer.fit(model, train_loader, val_loader)
 
-
-    for lamb in tqdm(lamb_values, desc="Barlow Twins Experiment"):
-        # Train model
-        model = BarlowTwins(
-            latent_dimensions=LATENT_DIMS,
-            encoders=[encoder_1, encoder_2],
-            lamb=lamb,
-            lr=LR,
-        )
-        trainer = pl.Trainer(max_epochs=EPOCHS, enable_checkpointing=False)
-        trainer.fit(model, train_loader, val_loader)
-
-        # Get latent vectors and calculate sparsity
-        latent_vectors = model.transform(val_loader)
-        plot_latent_spectrum(
-            latent_vectors,
-            title=f"Barlow Twins Latent Spectrum (Lamb={lamb})",
-            save_path=f"barlow_twins_latent_spectrum_lamb_{lamb}.pdf",
-        )
+    # Get latent vectors and calculate sparsity
+    latent_vectors = model.transform(val_loader)
+    plot_latent_spectrum(
+        latent_vectors, title="EY Latent Spectrum", save_path="plots/spectrum/ey_latent_spectrum.pdf"
+    )
 
     for cov in tqdm(cov_values, desc="VICReg Experiment"):
         # Train model
@@ -131,7 +111,7 @@ def experiment(train_loader, val_loader, encoder_1, encoder_2, lamb_values, cov_
         plot_latent_spectrum(
             latent_vectors,
             title=f"VICReg Latent Spectrum (Cov={cov})",
-            save_path=f"vicreg_latent_spectrum_cov_{cov}.pdf",
+            save_path=f"plots/spectrum/vicreg_latent_spectrum_cov_{cov}.pdf",
         )
 
     for lamb in tqdm(lamb_values, desc="Barlow Twins Experiment"):
@@ -150,7 +130,7 @@ def experiment(train_loader, val_loader, encoder_1, encoder_2, lamb_values, cov_
         plot_latent_spectrum(
             latent_vectors,
             title=f"Barlow Twins Latent Spectrum (Lamb={lamb})",
-            save_path=f"barlow_twins_latent_spectrum_lamb_{lamb}.pdf",
+            save_path=f"plots/spectrum/barlow_twins_latent_spectrum_lamb_{lamb}.pdf",
         )
 
 
